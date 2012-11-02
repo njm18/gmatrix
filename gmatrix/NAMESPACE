@@ -1,0 +1,84 @@
+useDynLib(gmatrix, .registration=TRUE)
+
+exportPattern("^[^\\.]")
+
+
+exportClasses("gmatrix", "gvector")
+
+
+exportMethods(
+    "^",
+    "-",
+    "[",
+    "*",
+    "/",
+    "%*%",
+    "+",
+    "abs",
+    "acos",
+    "acosh",
+    "as.gmatrix",
+    "as.gvector",
+    "as.matrix",
+    "as.numeric",
+    "as.vector",
+    "asin",
+    "asinh",
+    "atan",
+    "atanh",
+    "cos",
+    "cosh",
+    "crossprod",
+    "diag",
+    "diag<-",
+    "dim",
+    "dim<-",
+    "exp",
+    "expm1",
+    "gamma",
+    "length",
+    "lgamma",
+    "log",
+    "log10",
+    "log1p",
+    "log2",
+    "ncol",
+    "nrow",
+    "show",
+    "sin",
+    "sinh",
+    "sqrt",
+    "t",
+    "tan",
+    "tanh",
+    "tcrossprod",
+    "names",
+    "names<-",
+    "sum",
+    "mean",
+    "dimnames<-",
+    "rownames<-",
+    "colnames<-",
+    "dimnames",
+    "rownames",
+    "colnames",
+    'round',
+	'ceiling',
+	'floor',
+	'is.na',
+	'is.nan',
+	'is.finite',
+	'is.infinite',
+	'type')
+
+
+
+
+## So that such dispatch also works inside base functions:
+S3method(as.matrix, gmatrix)
+S3method(as.vector, gmatrix)
+S3method(t, gmatrix)
+
+S3method(as.matrix, gvector)
+S3method(as.vector, gvector)
+S3method(t, gvector)
