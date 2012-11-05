@@ -9,7 +9,9 @@ Installation Instructions
 1. Install the the CUDA Toolkit. The current version of 'gmatix' has been tested for CUDA Toolkit 4.0. At the time this was written version 4.0 was located at https://developer.nvidia.com/cuda-toolkit-40.
 2. Install R. The current version of 'gmatrix' has been tested under R 2.15.0.
 3. Start R and install the 'gmatrix' package with the command:
-    install.packages("gmatrix")
+```ruby
+install.packages("gmatrix")
+```
 
 Installation Note
 -----------------
@@ -17,9 +19,12 @@ By default the makefile assumes that
 + The the CUDA library files are located in the folder /usr/local/cuda/lib64.
 + The R libraries are located in the folder /usr/include/R.
 If this is an incorrect assumption the user may set these values and install using the follwing R commands:
-    Sys.setenv(CUDA_LIB_PATH="/usr/include/cuda/lib64") #set the cuda library path
-    Sys.setenv(R_INC_PATH="/usr/local/R/R-2.15.0/lib64/R/include") #set the R library path
-    install.packages("gmatrix")
+```ruby
+Sys.setenv(CUDA_LIB_PATH="/usr/include/cuda/lib64") #set the cuda library path
+Sys.setenv(R_INC_PATH="/usr/local/R/R-2.15.0/lib64/R/include") #set the R library path
+install.packages("gmatrix")
+```
+
 	    
 Getting Started
 ---------------
@@ -29,8 +34,3 @@ Getting Started
 + To move object to the host use: h()
 + Object on the device can be manipulated in much the same way other R objects can.
 
-```ruby
-require 'redcarpet'
-markdown = Redcarpet.new("Hello World!")
-puts markdown.to_html
-```
