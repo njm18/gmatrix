@@ -19,8 +19,11 @@ By default the makefile assumes that
 + The the CUDA library files are located in the folder /usr/local/cuda/lib64.
 + The R libraries are located in the folder /usr/include/R.
 If this is an incorrect assumption the user may set these values and install using the follwing R commands:
+
 ```Sys.setenv(CUDA_LIB_PATH="/usr/include/cuda/lib64") #set the cuda library path
+
 Sys.setenv(R_INC_PATH="/usr/local/R/R-2.15.0/lib64/R/include") #set the R library path
+
 install.packages("gmatrix")
 ```
 
