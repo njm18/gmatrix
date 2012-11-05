@@ -28,3 +28,9 @@ Getting Started
 + To move object to the device use: g()
 + To move object to the host use: h()
 + Object on the device can be manipulated in much the same way other R objects can.
+
+```ruby
+require 'redcarpet'
+markdown = Redcarpet.new("Hello World!")
+puts markdown.to_html
+```
