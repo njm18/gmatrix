@@ -14,7 +14,7 @@
 \title{Methods for coercing an object to a GPU class}
 \description{
 The \code{as.gmatrix} and \code{as.gvector} methods may be used to coerce an object to a given GPU class (i.e. \code{gmatrix} or \code{gvector}).
-}`	
+}
 %as.gmatrix(data, type=NULL, dup=TRUE)
 \usage{
 as.gmatrix(data = NA, nrow = 1L, ncol = 1L, byrow = FALSE,

@@ -2,17 +2,7 @@
 # 
 # Author: nmorris
 ###############################################################################
-#source("/home/nmorris/workspace/GPUMatrix/R/general.R")
-#source("/home/nmorris/workspace/GPUMatrix/R/gmatrix.R")
-#source("/home/nmorris/workspace/GPUMatrix/R/gvector.R")
-#source("/home/nmorris/workspace/GPUMatrix/R/operations.R")
 
-#dyn.load("/home/nmorris/workspace/GPUMatrix/src/GPUMatrix.so")
-#.C("deviceReset")
-#.C("startCublas")
-#.C("set_threads_per_block", as.integer(2^8))
-#.C("set_c", as.double(c(10,10,-.1)))
-#.Call("setup_curand", as.integer(32*14*16), as.integer(134), TRUE)
 
 ###########################
 #         normal
