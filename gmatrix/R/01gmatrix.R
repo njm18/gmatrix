@@ -3,24 +3,6 @@
 # Author: nmorris
 ###############################################################################
 
-setClass("gmatrix",
-		representation(
-				ptr="ANY",
-				nrow = "integer",
-				ncol = "integer",
-				rownames="ANY",
-				colnames="ANY",
-				type="integer",
-				device = "integer"),
-		prototype = list(
-				ptr=NULL,
-				nrow=NULL,
-				ncol=NULL,
-				rownames=NULL,
-				colnames=NULL,
-				type=100L,
-				device=100L)
-) 
 
 setMethod("initialize",
 		"gmatrix",
@@ -299,10 +281,18 @@ setMethod("ncol", "gmatrix",
 
 setMethod("show","gmatrix",
 		function(object) {
-			checkDevice(object@device)
+			#checkDevice(object@device)
 			cat(paste("gmatrix of size", object@nrow,"x", object@ncol, "and type", sQuote(type(object)),"on device", device(object)), ":\n",sep="")
 			#print(object@ptr)
-			tmp=as.matrix(object)
+			curD=getDevice()
+			flg=FALSE
+			if(object@device!=curD) {
+				setDevice(object@device, silent=TRUE)
+				flg=TRUE
+			}
+			tmp=h(object)
+			if(flg)
+				setDevice(curD, silent=TRUE)
 			if(nrow(object)>10 && ncol(object)>10)
 				cat("printing upper left corner of the matrix: \n")
 			else if(nrow(object)<=10 && ncol(object)>10)
@@ -386,15 +376,17 @@ setReplaceMethod("diag", "gmatrix",
 			i=as.gvector(which(i), type=2L)
 		else if(is.character(i))
 			i=as.gvector(match(i,nmx), type=2L)
-		else if(min(i)<1)
+		else if(min(i,  na.rm = TRUE)<1)
 			i=as.gvector((1:size)[i], type=2L)
 		else
 			i=as.gvector(i, type=2L)
 	} else	if(class(i)=="gvector") {
 		checkDevice(i@device)
-		if(i@type==3) {
+		f=function(x) {if(is.na(x)) return(x)
+			else return(sum(h(i),na.rm=TRUE))}
+		if(i@type==3L) {
 			i=which(i)
-		} else if(min(i,retgpu=FALSE)<1) {
+		} else if(f(min(i,retgpu=FALSE))<1) {
 			i=as.gvector((1:size)[as.integer(i)], type=2L) #works but may be bottle neck in some cases
 		} else
 			i=as.gvector(i, type=2L, dup=FALSE) 
@@ -414,32 +406,17 @@ setReplaceMethod("diag", "gmatrix",
 
 .twoindex=	function(x, i, j, ..., drop=TRUE) {
 	checkDevice(x@device)
-	if(missing(j)){
-		if(missing(i)) {
-			ret=x
-		} else {
-			#browser()
-			i=.check_make_valid(i,nrow(x),names(x))
-			ret=new("gmatrix", 
-					ptr=.Call("gpu_gmatrix_index_row", x@ptr, nrow(x), ncol(x), i@ptr, length(i), x@type),
-					nrow=length(i), ncol=ncol(x),type= x@type)
-		}
-	} else if(missing(i)) {
-		j=.check_make_valid(j,ncol(x),names(x))
-		ret=new("gmatrix", 
-				ptr=.Call("gpu_gmatrix_index_col", x@ptr, nrow(x), ncol(x), j@ptr, length(j),  x@type),
-				nrow=nrow(x), ncol=length(j), type=x@type)
-	} else {
-		j=.check_make_valid(j,ncol(x),names(x))
-		i=.check_make_valid(i,nrow(x),names(x))
-		#browser()
-		#SEXP gpu_gmatrix_index_both(SEXP A_in, SEXP n_row_A_in, SEXP n_col_A_in,
-		#		SEXP index_row_in, SEXP n_index_row_in,SEXP index_col_in, SEXP n_index_col_in)
-		ret=new("gmatrix", 
-				ptr=.Call("gpu_gmatrix_index_both", x@ptr, nrow(x), ncol(x), i@ptr, length(i), j@ptr, length(j), x@type),
-				nrow=length(i), ncol=length(j), type=x@type)
-		
-	}
+	
+	j=.check_make_valid(j,ncol(x),names(x))
+	i=.check_make_valid(i,nrow(x),names(x))
+	#browser()
+	#SEXP gpu_gmatrix_index_both(SEXP A_in, SEXP n_row_A_in, SEXP n_col_A_in,
+	#		SEXP index_row_in, SEXP n_index_row_in,SEXP index_col_in, SEXP n_index_col_in)
+	ret=new("gmatrix", 
+			ptr=.Call("gpu_gmatrix_index_both", x@ptr, nrow(x), ncol(x), i@ptr, length(i), j@ptr, length(j), x@type),
+			nrow=length(i), ncol=length(j), type=x@type)
+	
+	
 	
 	if(!is.null(rownames(x)))
 		rownames(ret)=rownames(x)[i]
@@ -454,6 +431,90 @@ setReplaceMethod("diag", "gmatrix",
 	
 	return(ret)
 }
+
+.colindex=	function(x, i, j, ..., drop=TRUE) {
+	checkDevice(x@device)
+	
+	j=.check_make_valid(j,ncol(x),names(x))
+	ret=new("gmatrix", 
+			ptr=.Call("gpu_gmatrix_index_col", x@ptr, nrow(x), ncol(x), j@ptr, length(j),  x@type),
+			nrow=nrow(x), ncol=length(j), type=x@type)
+	
+	if(!is.null(rownames(x)))
+		rownames(ret)=rownames(x)[i]
+	if(!is.null(colnames(x)))
+		colnames(ret)=colnames(x)
+	if(drop) {
+		if(nrow(ret)==1)
+			ret=new("gvector",ptr=ret@ptr, length=ncol(ret), names=colnames(ret), type=ret@type)
+		else if(ncol(ret)==1)
+			ret=new("gvector",ptr=ret@ptr, length=nrow(ret), names=rownames(ret), type=ret@type)
+	}
+	
+	return(ret)
+}
+
+
+
+.rowindex=	function(x, i, j, ..., drop=TRUE) {
+	checkDevice(x@device)
+	if(nargs() == 2) { ## e.g. M[0] , M[TRUE],  M[1:2]
+		return(.oneindex(x, i))
+	} else {
+		i=.check_make_valid(i,nrow(x),names(x))
+		ret=new("gmatrix", 
+				ptr=.Call("gpu_gmatrix_index_row", x@ptr, nrow(x), ncol(x), i@ptr, length(i), x@type),
+				nrow=length(i), ncol=ncol(x),type= x@type)
+		
+		if(!is.null(rownames(x)))
+			rownames(ret)=rownames(x)[i]
+		if(!is.null(colnames(x)))
+			colnames(ret)=colnames(x)
+		if(drop) {
+			if(nrow(ret)==1)
+				ret=new("gvector",ptr=ret@ptr, length=ncol(ret), names=colnames(ret), type=ret@type)
+			else if(ncol(ret)==1)
+				ret=new("gvector",ptr=ret@ptr, length=nrow(ret), names=rownames(ret), type=ret@type)
+		}
+	}
+	return(ret)
+}
+
+
+
+
+
+.setrowindex = function(x, i, j,..., value) {	
+	if(!(class(value) %in% c("gvector","gmatrix")))
+		value=as.gvector(value, type=x@type)
+	checkDevice(c(x@device,value@device))
+	if(x@type!=value@type)
+		type(value)=x@type
+	if(nargs() == 3) { ## e.g. M[0] , M[TRUE],  M[1:2]
+		return(.setoneindex(x, i, value))
+	} else {
+		i=.check_make_valid(i,nrow(x),names(x), TRUE)
+		tmp=.Call("gpu_gmatrix_index_row_set", x@ptr, nrow(x),ncol(x), value@ptr, length(value), i@ptr, length(i), x@type)
+	}
+	return(x)
+}
+
+.setcolindex = function(x, i, j,..., value) {
+	
+	if(!(class(value) %in% c("gvector","gmatrix")))
+		value=as.gvector(value, type=x@type)
+	checkDevice(c(x@device,value@device))
+	if(x@type!=value@type)
+		type(value)=x@type
+	
+	j=.check_make_valid(j,ncol(x),names(x),TRUE)				
+	#gpu_gmatrix_index_col_set(SEXP A_in, SEXP n_row_A_in, SEXP n_col_A_in,  SEXP val_in, SEXP n_val_in, SEXP index_in, SEXP n_index_in)
+	tmp=.Call("gpu_gmatrix_index_col_set", x@ptr, nrow(x),  ncol(x),value@ptr, length(value), j@ptr, length(j), x@type)
+	
+	return(x)
+}
+
+
 .settwoindex = function(x, i, j,..., value) {
 	
 	if(!(class(value) %in% c("gvector","gmatrix")))
@@ -462,30 +523,17 @@ setReplaceMethod("diag", "gmatrix",
 	if(x@type!=value@type)
 		type(value)=x@type
 	
-	if(missing(j)){
-		if(missing(i)) {
-			ret=x
-		} else {
-			#browser()
-			i=.check_make_valid(i,nrow(x),names(x), TRUE)
-			tmp=.Call("gpu_gmatrix_index_row_set", x@ptr, nrow(x),ncol(x), value@ptr, length(value), i@ptr, length(i), x@type)
-		}
-	} else if(missing(i)) {
-		j=.check_make_valid(i,ncol(x),names(x),TRUE)				
-		#gpu_gmatrix_index_col_set(SEXP A_in, SEXP n_row_A_in, SEXP n_col_A_in,  SEXP val_in, SEXP n_val_in, SEXP index_in, SEXP n_index_in)
-		tmp=.Call("gpu_gmatrix_index_col_set", x@ptr, nrow(x),  ncol(x),value@ptr, length(value), j@ptr, length(j), x@type)
-	} else {
-		i=.check_make_valid(i,nrow(x),names(x),TRUE)
-		j=.check_make_valid(j,ncol(x),names(x),TRUE)
-		#browser()
-		#SEXP gpu_gmatrix_index_both(SEXP A_in, SEXP n_row_A_in, SEXP n_col_A_in,
-		#		SEXP index_row_in, SEXP n_index_row_in,SEXP index_col_in, SEXP n_index_col_in)
-		tmp=.Call("gpu_gmatrix_index_both_set", x@ptr, nrow(x), ncol(x), value@ptr, length(value), i@ptr, length(i), j@ptr, length(j), x@type)
-	}
+	i=.check_make_valid(i,nrow(x),names(x),TRUE)
+	j=.check_make_valid(j,ncol(x),names(x),TRUE)
+	
+	#SEXP gpu_gmatrix_index_both(SEXP A_in, SEXP n_row_A_in, SEXP n_col_A_in,
+	#		SEXP index_row_in, SEXP n_index_row_in,SEXP index_col_in, SEXP n_index_col_in)
+	tmp=.Call("gpu_gmatrix_index_both_set", x@ptr, nrow(x), ncol(x), value@ptr, length(value), i@ptr, length(i), j@ptr, length(j), x@type)
 	return(x)
 }
 
-.oneindex=function(x, i, j) {
+
+.oneindex=function(x, i) {
 	checkDevice(x@device)
 	i=.check_make_valid(i,length(x),names(x))
 	ret=new("gvector", 
@@ -498,7 +546,7 @@ setReplaceMethod("diag", "gmatrix",
 	return(ret)
 }
 
-.setoneindex=function(x, i, j, ..., value) {
+.setoneindex=function(x, i, value) {
 	
 	
 	if(!(class(value) %in% c("gvector","gmatrix")))
@@ -514,45 +562,16 @@ setReplaceMethod("diag", "gmatrix",
 }
 
 
-setMethod("[", c("gmatrix","numeric","numeric"), 
-		.twoindex
-)
-setMethod("[", c("gmatrix","gvector","numeric"), 
-		.twoindex
-)
-setMethod("[", c("gmatrix","numeric","gvector"), 
-		.twoindex
-)
-setMethod("[", c("gmatrix","gvector","gvector"), 
-		.twoindex
-)
-setReplaceMethod("[", c("gmatrix","numeric","numeric"), 
-		.settwoindex
-)
-setReplaceMethod("[", c("gmatrix","gvector","numeric"), 
-		.settwoindex
-)
-setReplaceMethod("[", c("gmatrix","numeric","gvector"), 
-		.settwoindex
-)
-setReplaceMethod("[", c("gmatrix","gvector","gvector"), 
-		.settwoindex
-)
+setMethod("[", c("gmatrix","index","index"),    .twoindex)
+setMethod("[",  c("gmatrix","index","missing"), .rowindex)
+setMethod("[",  c("gmatrix","missing","index"), .colindex)
+setReplaceMethod("[", c("gmatrix","index","index"), .settwoindex)
+setReplaceMethod("[", c("gmatrix","index","missing"), .setrowindex)
+setReplaceMethod("[", c("gmatrix","missing","index"), .setcolindex)
 
 
 
-setReplaceMethod("[", c("gmatrix","numeric","missing"), 
-		.setoneindex
-)
-setReplaceMethod("[", c("gmatrix","gvector","missing"), 
-		.setoneindex
-)
-setMethod("[",  c("gmatrix","numeric","missing"), 
-		.oneindex
-)
-setMethod("[",  c("gmatrix","gvector","missing"), 
-		.oneindex
-)
+
 
 
 as.matrix.gmatrix =  selectMethod("as.matrix","gmatrix")

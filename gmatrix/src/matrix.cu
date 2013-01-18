@@ -21,8 +21,13 @@ static void gpu_finalizer(SEXP ext)
 	//	error("CUDA memory free error in 'gpu_finalizer.' (%d) \n", (int) status1);
     //          return;
     //}
+	if(gpu_ptr->device!=currentDevice)
+		cudaSetDevice(gpu_ptr->device);
 
 	CUDA_CLEAN_1(gpu_ptr->d_vec)
+
+	if(gpu_ptr->device!=currentDevice)
+		cudaSetDevice(currentDevice);
 
 	#ifdef DEBUG
     Rprintf("after free... \n");
@@ -34,6 +39,7 @@ static void gpu_finalizer(SEXP ext)
 
 SEXP gpu_register(struct gpuvec *in_vec)
 {
+	in_vec->device=currentDevice;
 
     SEXP ext = PROTECT(R_MakeExternalPtr(in_vec, R_NilValue, R_NilValue));
     R_RegisterCFinalizerEx(ext, gpu_finalizer, (Rboolean) 1);
@@ -548,11 +554,9 @@ SEXP matrix_multiply(SEXP A_in, SEXP B_in, SEXP transa, SEXP transb, SEXP in_typ
 template <typename T>
 __global__ void kernal_outer(T* x, T* y, T* ret, int n_x,  int op, int N, int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
-
-	for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		if (i < N) {
 			int col = i / n_x;
 			int row = i-n_x*col;
@@ -701,12 +705,10 @@ SEXP gpu_kronecker(SEXP A_in, SEXP B_in,SEXP n_A_row_in,SEXP n_A_col_in, SEXP n_
 template <typename T>
 __global__ void kernal_sumby(T* x, T* ret, int n_x, int n_ret, int* k_start_vec,  int* k_stop_vec, int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
 	double tmp_sum;
-
-	for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		if (i < n_ret) {
 			int k_start= k_start_vec[i]-1;
 			int k_stop = k_stop_vec[i];
@@ -775,10 +777,9 @@ SEXP gpu_kernal_sumby(SEXP A_in, SEXP index1_in,SEXP index2_in,SEXP n_A_in,SEXP 
 template <typename T>
 __global__ void kernal_mat_times_diag_vec(T* x, T *y, T* ret, int n_row_x, int n, int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
-	for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		if (i < n) {
 			int col = i / n_row_x;
 			ret[i] = x[i] * y[col] ;

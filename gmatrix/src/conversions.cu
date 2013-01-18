@@ -22,10 +22,9 @@ __device__ int R_NA3<int>(void) {
 template <typename T1, typename T2>
 __global__ void kernal_convert(T1* y, T2* x, int ny, int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
-	for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		T2 tmpx=x[i];
 		T1 tmpy;
 		if (i < ny) {

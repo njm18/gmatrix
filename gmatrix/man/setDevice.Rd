@@ -9,7 +9,7 @@ Get and set the current device.
 On systems with multiple GPUs the current device may be set or investigated with these functions.
 }
 \usage{
-setDevice(device, force = FALSE, ...)
+setDevice(device,force=FALSE,silent=FALSE,...)
 getDevice()
 listDevices()
 }
@@ -20,6 +20,9 @@ listDevices()
 }
   \item{force}{
 	Force reset of the tuning parameters even if they have already been set
+}
+  \item{silent}{
+	Prints a message if TRUE
 }
   \item{\dots}{
 	Arguments to set the tuning parameters. It's not a good idea to mess with these at this point.

@@ -1,7 +1,7 @@
 
 #include "gmatrix.h"
 
-
+/*
 template <typename T>
 __device__ bool myisfinite(T x) {
 	return isfinite(x) ;
@@ -28,24 +28,23 @@ __device__ int R_NA1<int>(void) {
 	return CUDA_R_Na_int;
 }
 
-
+*/
 
 template <typename T>
 __global__ void kernal_numeric_index(T* y, int n_y, T* ret, int n_ret, int* index,
 		int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
-	int j;
 
-	for ( int i = mystart; i < mystop; i++) {
+	int j;
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		__syncthreads();
 		if (i < n_ret) {
 			j=index[i];
 			//printf("id = %d, i=%d, j = %d \n",id, i, j);
-			if( myisfinite(j) || j>n_y || j<1 )
-				ret[i]=R_NA1<T>();
+			if( j==INT_MIN || j>n_y || j<1 )
+				MAKE_NA<T>(&(ret[i]));
 			else {
 				j=j-1;
 				ret[i] = y[j];
@@ -102,11 +101,11 @@ __global__ void kernal_gmatrix_index_row(
 		T* ret, int n_row_ret, int* index,
 		int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
+
 	int row_j;
-	for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		__syncthreads();
 		int col = i / n_row_ret;
 		int row = i-n_row_ret*col;
@@ -114,8 +113,8 @@ __global__ void kernal_gmatrix_index_row(
 			row_j=index[row];// ok this could be made more efficeint b/c it only needs to be looked up once for each row
 			//printf("id = %d, i=%d, row_j = %d, row = %d, col = %d, pos = %d, n_row_ret = %d, n_col_y=%d\n",
 			//		id, i, row_j, row, col, IDX2(row_j ,col ,n_row_y), n_row_ret,n_col_y);
-			if(myisfinite(row_j) || row_j>n_row_y || row_j<1)
-				ret[i]=R_NA1<T>();
+			if(row_j==INT_MIN || row_j>n_row_y || row_j<1)
+				MAKE_NA<T>(&(ret[i]));
 			else {
 				row_j=row_j-1;
 				ret[i] = y[IDX2(row_j ,col ,n_row_y)];
@@ -166,11 +165,11 @@ __global__ void kernal_gmatrix_index_col(
 		T* ret, int n_col_ret, int* index,
 		int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
+
 	int col_j;
-	for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		__syncthreads();
 		int col = i / n_row_y;
 		int row = i-n_row_y*col;
@@ -178,8 +177,8 @@ __global__ void kernal_gmatrix_index_col(
 			col_j=index[col];// ok this could be made more efficeint b/c it only needs to be looked up once for each row
 			//printf("id = %d, i=%d, col_j = %d, row = %d, col = %d, pos = %d, n_col_ret = %d, n_col_y=%d\n",
 			//		id, i, col_j, row, col, IDX2(row ,col_j ,n_row_y), n_col_ret,n_col_y);
-			if(myisfinite(col_j) || col_j>n_col_y || col_j<1)
-				ret[i]=R_NA1<T>();
+			if(col_j==INT_MIN || col_j>n_col_y || col_j<1)
+				MAKE_NA<T>(&(ret[i]));
 			else {
 				col_j=col_j-1;
 				ret[i] = y[IDX2(row ,col_j ,n_row_y)];
@@ -231,11 +230,11 @@ __global__ void kernal_gmatrix_index_both(
 		int* index_row, int* index_col,
 		int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
+
 	int col_j, row_j;
-	for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		__syncthreads();
 		int col = i / n_row_ret;
 		int row = i-n_row_ret*col;
@@ -244,8 +243,8 @@ __global__ void kernal_gmatrix_index_both(
 			row_j=index_row[row];
 			//printf("id = %d, i=%d, col_j = %d, row_j = %d, row = %d, col = %d, pos = %d, n_col_ret = %d, n_row_ret=%d\n",
 			//		id, i, col_j, row_j, row, col, IDX2(row_j ,col_j ,n_row_y), n_col_ret,n_row_ret);
-			if(myisfinite(col_j) || col_j>n_col_y || col_j<1 || myisfinite(row_j) || row_j>n_row_y || row_j<1 )
-				ret[i]=R_NA1<T>();
+			if(col_j==INT_MIN || col_j>n_col_y || col_j<1 || row_j==INT_MIN || row_j>n_row_y || row_j<1 )
+				MAKE_NA<T>(&(ret[i]));
 			else {
 				col_j=col_j-1;
 				row_j=row_j-1;
@@ -317,18 +316,18 @@ template <typename T>
 __global__ void kernal_numeric_index_set(T* y, int n_y, T* val, int n_val,int n_replace, int* index,
 		 int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
+
 	int j;
 
-	for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		__syncthreads();
 		if (i < n_replace) {
 			j=index[i];
 			//printf("id = %d, i=%d, j = %d \n",id, i, j);
 
-			if(!(myisfinite(j) || j>n_y || j<1)) {
+			if(!(j==INT_MIN || j>n_y || j<1)) {
 				j=j-1;
 				y[j]=val[i % n_val];
 			}
@@ -383,11 +382,11 @@ __global__ void kernal_gmatrix_index_row_set(
 		T* val, int n_val, int n_row_replace, int* index,
 		 int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
+
 	int row_j;
-	for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		__syncthreads();
 		int col = i / n_row_replace;
 		int row = i-n_row_replace*col;
@@ -395,7 +394,7 @@ __global__ void kernal_gmatrix_index_row_set(
 			row_j=index[row];// ok this could be made more efficeint b/c it only needs to be looked up once for each row
 			//printf("id = %d, i=%d, row_j = %d, row = %d, col = %d, pos = %d, n_row_replace = %d, n_col_y=%d\n",
 			//		id, i, row_j, row, col, IDX2(row_j ,col ,n_row_y), n_row_replace,n_col_y);
-			if(!(myisfinite(row_j) || row_j>n_row_y || row_j<1)) {
+			if(!(row_j==INT_MIN || row_j>n_row_y || row_j<1)) {
 				row_j=row_j-1;
 				y[IDX2(row_j ,col ,n_row_y)]= val[i% n_val] ;
 
@@ -447,11 +446,11 @@ __global__ void kernal_gmatrix_index_col_set(
 		T* val, int n_val, int n_col_replace, int* index,
 		 int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
+
 	int col_j;
-	for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		__syncthreads();
 		int col = i / n_row_y;
 		int row = i-n_row_y*col;
@@ -459,7 +458,7 @@ __global__ void kernal_gmatrix_index_col_set(
 			col_j=index[col];// ok this could be made more efficeint b/c it only needs to be looked up once for each row
 			//printf("id = %d, i=%d, col_j = %d, row = %d, col = %d, pos = %d, n_col_replace = %d, n_col_y=%d\n",
 			//		id, i, col_j, row, col, IDX2(row ,col_j ,n_row_y), n_col_replace,n_col_y);
-			if(!(myisfinite(col_j) || col_j>n_col_y || col_j<1)) {
+			if(!(col_j==INT_MIN || col_j>n_col_y || col_j<1)) {
 				col_j=col_j-1;
 				y[IDX2(row ,col_j ,n_row_y)]=val[i % n_val] ;
 
@@ -516,11 +515,11 @@ __global__ void kernal_gmatrix_index_both_set(
 		int* index_row, int* index_col,
 		 int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
+
 	int col_j, row_j;
-	for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		__syncthreads();
 		int col = i / n_row_replace;
 		int row = i-n_row_replace*col;
@@ -529,7 +528,7 @@ __global__ void kernal_gmatrix_index_both_set(
 			row_j=index_row[row];
 			//printf("id = %d, i=%d, col_j = %d, row_j = %d, row = %d, col = %d, pos = %d, n_col_replace = %d, n_row_replace=%d\n",
 			//		id, i, col_j, row_j, row, col, IDX2(row_j ,col_j ,n_row_y), n_col_replace,n_row_replace);
-			if(!(myisfinite(col_j) || col_j>n_col_y || col_j<1 || myisfinite(row_j) || row_j>n_row_y || row_j<1 )) {
+			if(!(col_j==INT_MIN || col_j>n_col_y || col_j<1 || row_j==INT_MIN || row_j>n_row_y || row_j<1 )) {
 				col_j=col_j-1;
 				row_j=row_j-1;
 				y[IDX2(row_j ,col_j ,n_row_y)]=val[i % n_val];
@@ -592,10 +591,10 @@ SEXP gpu_gmatrix_index_both_set(SEXP A_in, SEXP n_row_A_in, SEXP n_col_A_in, SEX
 template <typename T>
 __global__ void kernal_naive_transpose(T* y, T* ret, int n_row, int n_col, int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
-	for ( int i = mystart; i < mystop; i++) {
+
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		int col = i / n_row;
 		int row = i-n_row*col;
 		if (row < n_row && col<n_col) {
@@ -634,10 +633,10 @@ SEXP gpu_naive_transpose(SEXP A_in, SEXP n_row_in, SEXP n_col_in, SEXP in_type)
 template <typename T>
 __global__ void kernal_diag_get(T* y, T* ret, int n_row, int n,int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
-	for ( int i = mystart; i < mystop; i++) {
+
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		if (i < n) {
 			ret[i] = y[IDX2(i, i ,n_row)] ;
 		}
@@ -673,10 +672,10 @@ SEXP gpu_diag_get(SEXP A_in, SEXP n_row_in, SEXP n_col_in, SEXP in_type)
 template <typename T>
 __global__ void kernal_diag_set(T* y, T* val, int n_row, int n,int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
-	for ( int i = mystart; i < mystop; i++) {
+
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 
 		if (i < n) {
 			//printf("%d,  %d, %f \n ",IDX2(i, i ,n_row), i, val[i]);
@@ -715,10 +714,10 @@ SEXP gpu_diag_set(SEXP A_in, SEXP n_row_in, SEXP n_col_in, SEXP val_in, SEXP n_v
 template <typename T>
 __global__ void kernal_diag_set_one(T* y, T val, int n_row, int n,int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
-	for ( int i = mystart; i < mystop; i++) {
+
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 
 		if (i < n) {
 			//printf("%d,  %d, %f \n ",IDX2(i, i ,n_row), i, val[i]);

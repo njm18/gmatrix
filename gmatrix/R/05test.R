@@ -1,20 +1,10 @@
-# TODO: Add comment
-# 
-# Author: nmorris
 ###########################################################################
-# TODO: Add comment
+# Test Script
 # 
 # Author: nmorris
 ###############################################################################
-
-
-
-
-
-library(gmatrix,lib.loc="/home/nmorris/.RLIBS")
-
-
-gtest = function() {
+#library(gmatrix,lib.loc="/home/nmorris/.RLIBS")
+gtest =function() {
 	
 	tn=100
 	tsn=5
@@ -33,7 +23,7 @@ gtest = function() {
 	
 	
 	
-	vec=5*((1:tn)-1)/(tn)
+	vec=((1:tn)-1)*(5/tn)
 	testvecgpu=list(
 			as.gvector(vec,type="d"),
 			as.gvector(vec,type="s"),
@@ -47,7 +37,7 @@ gtest = function() {
 			as.logical(vec))
 	
 	
-	mat=matrix(1:(tn*tn-1),tn,tn)*(5/tn)
+	mat=matrix(0:(tn*tn-1),tn,tn)*(5/tn)
 	testmatgpu=list(
 			as.gmatrix(mat,type="d"),
 			as.gmatrix(mat,type="s"),
@@ -76,7 +66,7 @@ gtest = function() {
 			as.logical(vec))
 	
 	
-	mat=matrix(1:(tsn*tsn),tsn,tsn)*(5/tn)
+	mat=matrix(0:(tsn*tsn-1),tsn,tsn)*(5/tn)
 	testsmatgpu=list(
 			as.gmatrix(mat,type="d"),
 			as.gmatrix(mat,type="s"),
@@ -129,7 +119,7 @@ gtest = function() {
 				ret=0
 		return(ret)
 	}
-	dist=function(x1,y1,mat1,mat2,gpu1,gpu2, type1=cputype(gpu1,i-1),type2=cputype(gpu2,j-1)) {
+	checkmm=function(x1,y1,mat1,mat2,gpu1,gpu2, type1=cputype(gpu1,i-1),type2=cputype(gpu2,j-1)) {
 		yexpr=substitute(y1, list(i=i,j=j))
 		xexpr=substitute(x1, list(i=i,j=j))
 		tmpnm=deparse(expr=xexpr)
@@ -183,36 +173,70 @@ gtest = function() {
 	}
 	
 	#warningslist=list()
+	cat("Checking matrix multiplication, crossprod and tcrossprod... \n")
 	multOps=list(
 			list("matrix multiplication", function(a,b) a %*% b),
-			list("crossprod", function(a,b) a %*% b),
-			list("tcrossprod", function(a,b) a %*% b)
+			list("crossprod", function(a,b) crossprod(a, b)),
+			list("tcrossprod", function(a,b) tcrossprod(a , b))
 	)
 	for(op in multOps) {	
-		suppressWarnings(setGeneric("%op%",op[[2]]))
+	#	browser()
+		#suppressWarnings(setGeneric("%op%",op[[2]],where=globalenv()))
+		
 		opname=op[[1]]
+		opf=op[[2]]
 		for(i in 1:4){
 			for(j in 1:4){
-				dist(testmatgpu[[i]] %op% testmatgpu[[j]],testmatcpu[[i]] %op% testmatcpu[[j]],mat1=TRUE,mat2=TRUE,gpu1=TRUE,gpu2=TRUE)
-				dist(testmatcpu[[i]] %op% testmatgpu[[j]],testmatcpu[[i]] %op% testmatcpu[[j]],mat1=TRUE,mat2=TRUE,gpu1=FALSE,gpu2=TRUE)
-				dist(testmatgpu[[i]] %op% testmatcpu[[j]],testmatcpu[[i]] %op% testmatcpu[[j]],mat1=TRUE,mat2=TRUE,gpu1=TRUE,gpu2=FALSE)
+				checkmm(opf(testmatgpu[[i]], testmatgpu[[j]]), opf(testmatcpu[[i]], testmatcpu[[j]]),mat1=TRUE,mat2=TRUE,gpu1=TRUE,gpu2=TRUE)
+				checkmm(opf(testmatcpu[[i]], testmatgpu[[j]]), opf(testmatcpu[[i]], testmatcpu[[j]]),mat1=TRUE,mat2=TRUE,gpu1=FALSE,gpu2=TRUE)
+				checkmm(opf(testmatgpu[[i]], testmatcpu[[j]]), opf(testmatcpu[[i]], testmatcpu[[j]]),mat1=TRUE,mat2=TRUE,gpu1=TRUE,gpu2=FALSE)
 				
-				dist(testmatgpu[[i]] %op% testvecgpu[[j]],testmatcpu[[i]] %op% testveccpu[[j]],mat1=TRUE,mat2=FALSE,gpu1=TRUE,gpu2=TRUE)
-				dist(testmatgpu[[i]] %op% testveccpu[[j]],testmatcpu[[i]] %op% testveccpu[[j]],mat1=TRUE,mat2=FALSE,gpu1=TRUE,gpu2=FALSE)
-				dist(testmatcpu[[i]] %op% testvecgpu[[j]],testmatcpu[[i]] %op% testveccpu[[j]],mat1=TRUE,mat2=FALSE,gpu1=FALSE,gpu2=TRUE)
+				if(opname!="tcrossprod"){
+					checkmm(opf(testmatgpu[[i]], testvecgpu[[j]]), opf(testmatcpu[[i]], testveccpu[[j]]),mat1=TRUE,mat2=FALSE,gpu1=TRUE,gpu2=TRUE)
+					checkmm(opf(testmatgpu[[i]], testveccpu[[j]]), opf(testmatcpu[[i]], testveccpu[[j]]),mat1=TRUE,mat2=FALSE,gpu1=TRUE,gpu2=FALSE)
+					checkmm(opf(testmatcpu[[i]], testvecgpu[[j]]), opf(testmatcpu[[i]], testveccpu[[j]]),mat1=TRUE,mat2=FALSE,gpu1=FALSE,gpu2=TRUE)
+				}
+				checkmm(opf(testvecgpu[[i]], testmatgpu[[j]]), opf(testveccpu[[i]], testmatcpu[[j]]),mat1=FALSE,mat2=TRUE,gpu1=TRUE,gpu2=TRUE)
+				checkmm(opf(testvecgpu[[i]], testmatcpu[[j]]), opf(testveccpu[[i]], testmatcpu[[j]]),mat1=FALSE,mat2=TRUE,gpu1=TRUE,gpu2=FALSE)
+				checkmm(opf(testveccpu[[i]], testmatgpu[[j]]), opf(testveccpu[[i]], testmatcpu[[j]]),mat1=FALSE,mat2=TRUE,gpu1=FALSE,gpu2=TRUE)
 				
-				dist(testvecgpu[[i]] %op% testmatgpu[[j]],testveccpu[[i]] %op% testmatcpu[[j]],mat1=FALSE,mat2=TRUE,gpu1=TRUE,gpu2=TRUE)
-				dist(testvecgpu[[i]] %op% testmatcpu[[j]],testveccpu[[i]] %op% testmatcpu[[j]],mat1=FALSE,mat2=TRUE,gpu1=TRUE,gpu2=FALSE)
-				dist(testveccpu[[i]] %op% testmatgpu[[j]],testveccpu[[i]] %op% testmatcpu[[j]],mat1=FALSE,mat2=TRUE,gpu1=FALSE,gpu2=TRUE)
-				
-				dist(testvecgpu[[i]] %op% testvecgpu[[j]],testveccpu[[i]] %op% testveccpu[[j]],mat1=FALSE,mat2=FALSE,gpu1=TRUE,gpu2=TRUE)
-				dist(testveccpu[[i]] %op% testvecgpu[[j]],testveccpu[[i]] %op% testveccpu[[j]],mat1=FALSE,mat2=FALSE,gpu1=FALSE,gpu2=TRUE)
-				dist(testvecgpu[[i]] %op% testveccpu[[j]],testveccpu[[i]] %op% testveccpu[[j]],mat1=FALSE,mat2=FALSE,gpu1=TRUE,gpu2=FALSE)		
+				checkmm(opf(testvecgpu[[i]], testvecgpu[[j]]), opf(testveccpu[[i]], testveccpu[[j]]),mat1=FALSE,mat2=FALSE,gpu1=TRUE,gpu2=TRUE)
+				checkmm(opf(testveccpu[[i]], testvecgpu[[j]]), opf(testveccpu[[i]], testveccpu[[j]]),mat1=FALSE,mat2=FALSE,gpu1=FALSE,gpu2=TRUE)
+				checkmm(opf(testvecgpu[[i]], testveccpu[[j]]), opf(testveccpu[[i]], testveccpu[[j]]),mat1=FALSE,mat2=FALSE,gpu1=TRUE,gpu2=FALSE)		
 			}
 		}
 	}
+	#rm("%op%", envir=globalenv() )
 	#warningslist
+	cat("Checking outer product and kronecker product... \n")
+	if(any(h(testvecgpu[[1]] %o% testvecgpu[[1]])!=testveccpu[[1]] %o% testveccpu[[1]] )) 
+		warningslist<-c(warningslist,paste("%o% not working correctly"))
+	if(any(h(testveccpu[[1]] %o% testvecgpu[[1]])!=testveccpu[[1]] %o% testveccpu[[1]] )) 
+		warningslist<-c(warningslist,paste("%o% not working correctly"))
+	if(any(h(testvecgpu[[1]] %o% testveccpu[[1]])!=testveccpu[[1]] %o% testveccpu[[1]] )) 
+		warningslist<-c(warningslist,paste("%o% not working correctly"))
+	if(any(h(testvecgpu[[1]] %o% testveccpu[[1]])!=testveccpu[[1]] %o% testveccpu[[1]] )) 
+		warningslist<-c(warningslist,paste("%o% not working correctly"))
+	if(type(testvecgpu[[2]] %o% testveccpu[[1]])!= "single") 
+		warningslist<-c(warningslist,paste("%o% not working correctly (should return single)"))
+	if(type(testveccpu[[1]] %o% testvecgpu[[2]])!= "single") 
+		warningslist<-c(warningslist,paste("%o% not working correctly (should return single)"))
 	
+	if(any(h(gouter(testvecgpu[[1]] , testvecgpu[[1]]))!=testveccpu[[1]] %o% testveccpu[[1]] )) 
+		warningslist<-c(warningslist,paste("%o% not working correctly"))
+	if(any(h(gouter(testveccpu[[1]] , testvecgpu[[1]]))!=testveccpu[[1]] %o% testveccpu[[1]] )) 
+		warningslist<-c(warningslist,paste("%o% not working correctly"))
+	if(any(h(gouter(testvecgpu[[1]] , testveccpu[[1]]))!=testveccpu[[1]] %o% testveccpu[[1]] )) 
+		warningslist<-c(warningslist,paste("%o% not working correctly"))
+	
+	if(any(h(gkroneckerProd(testmatgpu[[1]][1:10,1:10] , testmatgpu[[1]][1:10,1:10]))!=testmatcpu[[1]][1:10,1:10] %x% testmatcpu[[1]][1:10,1:10] )) 
+		warningslist<-c(warningslist,paste("gkroneckerProd not working correctly"))
+	if(any(h(gkroneckerProd(testmatcpu[[1]][1:10,1:10] , testmatgpu[[1]][1:10,1:10]))!=testmatcpu[[1]][1:10,1:10] %x% testmatcpu[[1]][1:10,1:10]  )) 
+		warningslist<-c(warningslist,paste("gkroneckerProd not working correctly"))
+	if(any(h(testmatgpu[[1]][1:10,1:10] %x% testmatcpu[[1]][1:10,1:10])!=testmatcpu[[1]][1:10,1:10] %x% testmatcpu[[1]][1:10,1:10] )) 
+		warningslist<-c(warningslist,paste("%x% not working correctly"))
+	if(any(h(testvecgpu[[1]] %x% testveccpu[[1]])!=testveccpu[[1]] %x% testveccpu[[1]])) 
+		warningslist<-c(warningslist,paste("%x% not working correctly"))
 	######################################################
 	# Test Exchangeable + Nonexchangeable Binary elementwise operations    #
 	######################################################
@@ -232,7 +256,7 @@ gtest = function() {
 			c("gte" ,">=",   "3", "2" ),
 			c("lte" ,"<=",   "3", "2" )
 	)
-	dist=function(x1,y1,mat1,mat2,gpu1,gpu2, type1=i-1,type2=j-1, out_type=outt, op=binaryop, maxtype=as.integer(maxouttype)) {
+	checkbinobs=function(x1,y1,mat1,mat2,gpu1,gpu2, type1=i-1,type2=j-1, out_type=outt, op=binaryop, maxtype=as.integer(maxouttype)) {
 		if(out_type=="min") {
 			out_type=min(type1,type2)
 			if(out_type>maxtype) {
@@ -334,59 +358,65 @@ gtest = function() {
 		#exOp=exOps[[8]]
 		binaryop=exOp[2]
 		maxouttype=exOp[4]
-		cat(binaryop," ")
 		outt=exOp[3]
-		suppressWarnings(
-				setGeneric("%op%",
-						function(x,y)
-							return(eval(parse(text=paste("x",binaryop,"y")))
-							)
-				)
-		)
+		
+		
+#		suppressWarnings(
+#				setGeneric("%op%",
+#						function(a,b)
+#							return(eval(parse(text=paste("a",binaryop,"b")))
+#							),
+#						where=globalenv()
+#				)
+#		)
+		opf=function(a,b)
+			return(eval(parse(text=paste("a",binaryop,"b"))))
+		
+		cat(binaryop," ")
 		for(i in 1:4){
 			for(j in 1:4){
 				#	cat(i,j,"\n")
 				
-				dist(testmatgpu[[i]] %op% testmatgpu[[j]],testmatcpu[[i]] %op% testmatcpu[[j]],mat1=2,mat2=2,gpu1=TRUE,gpu2=TRUE)
-				dist(testmatcpu[[i]] %op% testmatgpu[[j]],testmatcpu[[i]] %op% testmatcpu[[j]],mat1=2,mat2=2,gpu1=FALSE,gpu2=TRUE)
-				dist(testmatgpu[[i]] %op% testmatcpu[[j]],testmatcpu[[i]] %op% testmatcpu[[j]],mat1=2,mat2=2,gpu1=TRUE,gpu2=FALSE)
+				checkbinobs(opf(testmatgpu[[i]], testmatgpu[[j]]), opf(testmatcpu[[i]], testmatcpu[[j]]),mat1=2,mat2=2,gpu1=TRUE,gpu2=TRUE)
+				checkbinobs(opf(testmatcpu[[i]], testmatgpu[[j]]), opf(testmatcpu[[i]], testmatcpu[[j]]),mat1=2,mat2=2,gpu1=FALSE,gpu2=TRUE)
+				checkbinobs(opf(testmatgpu[[i]], testmatcpu[[j]]), opf(testmatcpu[[i]], testmatcpu[[j]]),mat1=2,mat2=2,gpu1=TRUE,gpu2=FALSE)
 				
-				dist(testmatgpu[[i]] %op% testvecgpu[[j]],testmatcpu[[i]] %op% testveccpu[[j]],mat1=2,mat2=1,gpu1=TRUE,gpu2=TRUE)
-				dist(testmatgpu[[i]] %op% testveccpu[[j]],testmatcpu[[i]] %op% testveccpu[[j]],mat1=2,mat2=1,gpu1=TRUE,gpu2=FALSE)
-				dist(testmatcpu[[i]] %op% testvecgpu[[j]],testmatcpu[[i]] %op% testveccpu[[j]],mat1=2,mat2=1,gpu1=FALSE,gpu2=TRUE)
+				checkbinobs(opf(testmatgpu[[i]], testvecgpu[[j]]), opf(testmatcpu[[i]], testveccpu[[j]]),mat1=2,mat2=1,gpu1=TRUE,gpu2=TRUE)
+				checkbinobs(opf(testmatgpu[[i]], testveccpu[[j]]), opf(testmatcpu[[i]], testveccpu[[j]]),mat1=2,mat2=1,gpu1=TRUE,gpu2=FALSE)
+				checkbinobs(opf(testmatcpu[[i]], testvecgpu[[j]]), opf(testmatcpu[[i]], testveccpu[[j]]),mat1=2,mat2=1,gpu1=FALSE,gpu2=TRUE)
 				
-				dist(testvecgpu[[i]] %op% testmatgpu[[j]],testveccpu[[i]] %op% testmatcpu[[j]],mat1=1,mat2=2,gpu1=TRUE,gpu2=TRUE)
-				dist(testvecgpu[[i]] %op% testmatcpu[[j]],testveccpu[[i]] %op% testmatcpu[[j]],mat1=1,mat2=2,gpu1=TRUE,gpu2=FALSE)
-				dist(testveccpu[[i]] %op% testmatgpu[[j]],testveccpu[[i]] %op% testmatcpu[[j]],mat1=1,mat2=2,gpu1=FALSE,gpu2=TRUE)
+				checkbinobs(opf(testvecgpu[[i]], testmatgpu[[j]]), opf(testveccpu[[i]], testmatcpu[[j]]),mat1=1,mat2=2,gpu1=TRUE,gpu2=TRUE)
+				checkbinobs(opf(testvecgpu[[i]], testmatcpu[[j]]), opf(testveccpu[[i]], testmatcpu[[j]]),mat1=1,mat2=2,gpu1=TRUE,gpu2=FALSE)
+				checkbinobs(opf(testveccpu[[i]], testmatgpu[[j]]), opf(testveccpu[[i]], testmatcpu[[j]]),mat1=1,mat2=2,gpu1=FALSE,gpu2=TRUE)
 				
-				dist(testvecgpu[[i]] %op% testvecgpu[[j]],testveccpu[[i]] %op% testveccpu[[j]],mat1=1,mat2=1,gpu1=TRUE,gpu2=TRUE)
-				dist(testveccpu[[i]] %op% testvecgpu[[j]],testveccpu[[i]] %op% testveccpu[[j]],mat1=1,mat2=1,gpu1=FALSE,gpu2=TRUE)
-				dist(testvecgpu[[i]] %op% testveccpu[[j]],testveccpu[[i]] %op% testveccpu[[j]],mat1=1,mat2=1,gpu1=TRUE,gpu2=FALSE)
+				checkbinobs(opf(testvecgpu[[i]], testvecgpu[[j]]), opf(testveccpu[[i]], testveccpu[[j]]),mat1=1,mat2=1,gpu1=TRUE,gpu2=TRUE)
+				checkbinobs(opf(testveccpu[[i]], testvecgpu[[j]]), opf(testveccpu[[i]], testveccpu[[j]]),mat1=1,mat2=1,gpu1=FALSE,gpu2=TRUE)
+				checkbinobs(opf(testvecgpu[[i]], testveccpu[[j]]), opf(testveccpu[[i]], testveccpu[[j]]),mat1=1,mat2=1,gpu1=TRUE,gpu2=FALSE)
 				
-				dist(testvecgpu[[i]] %op% testscalergpu[[j]], testveccpu[[i]] %op% testscalercpu[[j]],mat1=1,mat2=0,gpu1=TRUE,gpu2=TRUE)
-				dist(testveccpu[[i]] %op% testscalergpu[[j]], testveccpu[[i]] %op% testscalercpu[[j]],mat1=1,mat2=0,gpu1=FALSE,gpu2=TRUE)
-				dist(testvecgpu[[i]] %op% testscalercpu[[j]], testveccpu[[i]] %op% testscalercpu[[j]],mat1=1,mat2=0,gpu1=TRUE,gpu2=FALSE)
+				checkbinobs(opf(testvecgpu[[i]], testscalergpu[[j]]), opf(testveccpu[[i]], testscalercpu[[j]]),mat1=1,mat2=0,gpu1=TRUE,gpu2=TRUE)
+				checkbinobs(opf(testveccpu[[i]], testscalergpu[[j]]), opf(testveccpu[[i]], testscalercpu[[j]]),mat1=1,mat2=0,gpu1=FALSE,gpu2=TRUE)
+				checkbinobs(opf(testvecgpu[[i]], testscalercpu[[j]]), opf(testveccpu[[i]], testscalercpu[[j]]),mat1=1,mat2=0,gpu1=TRUE,gpu2=FALSE)
 				
-				dist(testscalergpu[[i]] %op% testvecgpu[[j]], testscalercpu[[i]] %op% testveccpu[[j]],mat1=0,mat2=1,gpu1=TRUE,gpu2=TRUE)
-				dist(testscalergpu[[i]] %op% testveccpu[[j]], testscalercpu[[i]] %op% testveccpu[[j]] ,mat1=0,mat2=1,gpu1=TRUE,gpu2=FALSE)
-				dist(testscalercpu[[i]] %op% testvecgpu[[j]], testscalercpu[[i]] %op% testveccpu[[j]] ,mat1=0,mat2=1,gpu1=FALSE,gpu2=TRUE)
+				checkbinobs(opf(testscalergpu[[i]], testvecgpu[[j]]), opf(testscalercpu[[i]], testveccpu[[j]]),mat1=0,mat2=1,gpu1=TRUE,gpu2=TRUE)
+				checkbinobs(opf(testscalergpu[[i]], testveccpu[[j]]), opf(testscalercpu[[i]], testveccpu[[j]]) ,mat1=0,mat2=1,gpu1=TRUE,gpu2=FALSE)
+				checkbinobs(opf(testscalercpu[[i]], testvecgpu[[j]]), opf(testscalercpu[[i]], testveccpu[[j]]) ,mat1=0,mat2=1,gpu1=FALSE,gpu2=TRUE)
 				
-				dist(testmatgpu[[i]] %op% testscalergpu[[j]], testmatcpu[[i]] %op% testscalercpu[[j]],mat1=2,mat2=0,gpu1=TRUE,gpu2=TRUE)
-				dist(testmatcpu[[i]] %op% testscalergpu[[j]], testmatcpu[[i]] %op% testscalercpu[[j]],mat1=2,mat2=0,gpu1=FALSE,gpu2=TRUE)
-				dist(testmatgpu[[i]] %op% testscalercpu[[j]], testmatcpu[[i]] %op% testscalercpu[[j]],mat1=2,mat2=0,gpu1=TRUE,gpu2=FALSE)
+				checkbinobs(opf(testmatgpu[[i]], testscalergpu[[j]]), opf(testmatcpu[[i]], testscalercpu[[j]]),mat1=2,mat2=0,gpu1=TRUE,gpu2=TRUE)
+				checkbinobs(opf(testmatcpu[[i]], testscalergpu[[j]]), opf(testmatcpu[[i]], testscalercpu[[j]]),mat1=2,mat2=0,gpu1=FALSE,gpu2=TRUE)
+				checkbinobs(opf(testmatgpu[[i]], testscalercpu[[j]]), opf(testmatcpu[[i]], testscalercpu[[j]]),mat1=2,mat2=0,gpu1=TRUE,gpu2=FALSE)
 				
-				dist(testscalergpu[[i]] %op% testmatgpu[[j]], testscalercpu[[i]] %op% testmatcpu[[j]],mat1=0,mat2=2,gpu1=TRUE,gpu2=TRUE)
-				dist(testscalergpu[[i]] %op% testmatcpu[[j]], testscalercpu[[i]] %op% testmatcpu[[j]] ,mat1=0,mat2=2,gpu1=TRUE,gpu2=FALSE)
-				dist(testscalercpu[[i]] %op% testmatgpu[[j]], testscalercpu[[i]] %op% testmatcpu[[j]] ,mat1=0,mat2=2,gpu1=FALSE,gpu2=TRUE)
+				checkbinobs(opf(testscalergpu[[i]], testmatgpu[[j]]), opf(testscalercpu[[i]], testmatcpu[[j]]),mat1=0,mat2=2,gpu1=TRUE,gpu2=TRUE)
+				checkbinobs(opf(testscalergpu[[i]], testmatcpu[[j]]), opf(testscalercpu[[i]], testmatcpu[[j]]) ,mat1=0,mat2=2,gpu1=TRUE,gpu2=FALSE)
+				checkbinobs(opf(testscalercpu[[i]], testmatgpu[[j]]), opf(testscalercpu[[i]], testmatcpu[[j]]) ,mat1=0,mat2=2,gpu1=FALSE,gpu2=TRUE)
 				
 				
-				dist(testvecgpu[[i]] %op% testsvecgpu[[j]], testveccpu[[i]] %op% testsveccpu[[j]],mat1=1,mat2=0,gpu1=TRUE,gpu2=TRUE)
-				dist(testveccpu[[i]] %op% testsvecgpu[[j]], testveccpu[[i]] %op% testsveccpu[[j]],mat1=1,mat2=0,gpu1=FALSE,gpu2=TRUE)
-				dist(testvecgpu[[i]] %op% testsveccpu[[j]], testveccpu[[i]] %op% testsveccpu[[j]],mat1=1,mat2=0,gpu1=TRUE,gpu2=FALSE)
+				checkbinobs(opf(testvecgpu[[i]], testsvecgpu[[j]]), opf(testveccpu[[i]], testsveccpu[[j]]),mat1=1,mat2=0,gpu1=TRUE,gpu2=TRUE)
+				checkbinobs(opf(testveccpu[[i]], testsvecgpu[[j]]), opf(testveccpu[[i]], testsveccpu[[j]]),mat1=1,mat2=0,gpu1=FALSE,gpu2=TRUE)
+				checkbinobs(opf(testvecgpu[[i]], testsveccpu[[j]]), opf(testveccpu[[i]], testsveccpu[[j]]),mat1=1,mat2=0,gpu1=TRUE,gpu2=FALSE)
 				
-				dist(testsvecgpu[[i]] %op% testvecgpu[[j]], testsveccpu[[i]] %op% testveccpu[[j]],mat1=0,mat2=1,gpu1=TRUE,gpu2=TRUE)
-				dist(testsvecgpu[[i]] %op% testveccpu[[j]], testsveccpu[[i]] %op% testveccpu[[j]] ,mat1=0,mat2=1,gpu1=TRUE,gpu2=FALSE)
-				dist(testsveccpu[[i]] %op% testvecgpu[[j]], testsveccpu[[i]] %op% testveccpu[[j]] ,mat1=0,mat2=1,gpu1=FALSE,gpu2=TRUE)
+				checkbinobs(opf(testsvecgpu[[i]], testvecgpu[[j]]), opf(testsveccpu[[i]], testveccpu[[j]]),mat1=0,mat2=1,gpu1=TRUE,gpu2=TRUE)
+				checkbinobs(opf(testsvecgpu[[i]], testveccpu[[j]]), opf(testsveccpu[[i]], testveccpu[[j]]) ,mat1=0,mat2=1,gpu1=TRUE,gpu2=FALSE)
+				checkbinobs(opf(testsveccpu[[i]], testvecgpu[[j]]), opf(testsveccpu[[i]], testveccpu[[j]]) ,mat1=0,mat2=1,gpu1=FALSE,gpu2=TRUE)
 				
 				
 			}
@@ -431,7 +461,7 @@ gtest = function() {
 			c("-","-",""),
 			c("+","+",""))
 	
-	dist=function(x1,y, op=unaryop) {
+	checkunobs=function(x1,y, op=unaryop) {
 		mywarnings=character()
 		x=tryCatch(eval(x1), error=function(e) {
 					mywarnings<<-conditionMessage(e)
@@ -465,7 +495,7 @@ gtest = function() {
 		}
 		return(mywarnings)
 	}
-	cat("Checking Unary Operations/special functions... ")
+	cat("\nChecking Unary Operations/special functions... ")
 
 	for(exOp in unOps) {
 		unaryop=exOp[1]
@@ -475,24 +505,24 @@ gtest = function() {
 			return(eval(callexpr))
 		
 		for(i in 1:4) {
-			dist(myop(testvecgpu[[i]]), myop(testveccpu[[i]]))
+			checkunobs(myop(testvecgpu[[i]]), myop(testveccpu[[i]]))
 			
 		}
 		
 	}
-
+	cat("\nChecking ifelse and which... \n")
 	if(any(h(ifelse(gmatrix(c(T,F),4,4),c(1,2),c(1,2,3)))!=ifelse(matrix(c(T,F),4,4),c(1,2),c(1,2,3))))
 		warningslist<-c(warningslist,"ifelse not working correctly")
 	if(any(h(which(g.rep(c(T,F),100)))!=which(rep(c(T,F),100))))
 		warningslist<-c(warningslist,"which or g.rep not working correctly")
-	
+	cat("Checking sort and order... \n")
 	for(i in 0:2) {
 		if(any(h(sort(as.gvector(c(1,4,3,2),type=i)))!=c(1,2,3,4)))
 			warningslist<-c(warningslist,paste("sort not working correctly:",i))
 		if(any(h(sort(as.gvector(c(1,4,3,2)),decreasing=TRUE))!=c(4,3,2,1)))
 			warningslist<-c(warningslist,paste("sort decreasing=TRUE not working correctly:",i))
 	}
-	
+	cat("Checking max, min, sum and col/row sums/means... \n")
 	for(i in 0:2) {
 		if(h(max(as.gvector(c(1,4,3,2),type=i)))!=4)
 			warningslist<-c(warningslist,paste("max not working correctly for type:",i))
@@ -504,48 +534,27 @@ gtest = function() {
 			warningslist<-c(warningslist,paste("mean not working correctly for type:",i))
 		if(h(mean(as.gvector(c(1,4,3,2),type=i)))!=2.5)
 			warningslist<-c(warningslist,paste("mean not working correctly for type:",i))
-		if(any(h(rowMeans(testmatgpu[[i+1]]))!=rowMeans(testmatcpu[[i+1]])))
-			warningslist<-c(warningslist,paste("rowMeans not working correctly for type:",i))
-		if(any(h(colMeans(testmatgpu[[i+1]]))!=colMeans(testmatcpu[[i+1]])))
-			warningslist<-c(warningslist,paste("colMeans not working correctly for type:",i))
-		if(any(h(rowSums(testmatgpu[[i+1]]))!=rowSums(testmatcpu[[i+1]])))
-			warningslist<-c(warningslist,paste("rowSums not working correctly for type:",i))
-		if(any(h(colSums(testmatgpu[[i+1]]))!=colSums(testmatcpu[[i+1]])))
-			warningslist<-c(warningslist,paste("colSums not working correctly for type:",i))
-		
+		checkunobs(rowMeans(testmatgpu[[i+1]]), rowMeans(testmatcpu[[i+1]]), "rowMeans" )
+		checkunobs(rowSums( testmatgpu[[i+1]]), rowSums(testmatcpu[[i+1]]), "rowSums" )
+		checkunobs(colMeans(testmatgpu[[i+1]]), colMeans(testmatcpu[[i+1]]), "colMeans" )
+		checkunobs(colSums( testmatgpu[[i+1]]), colSums(testmatcpu[[i+1]]), "colSums" )
 	}
-	if(any(h(testvecgpu[[1]] %o% testvecgpu[[1]])!=testveccpu[[1]] %o% testveccpu[[1]] )) 
-		warningslist<-c(warningslist,paste("%o% not working correctly"))
-	if(any(h(testveccpu[[1]] %o% testvecgpu[[1]])!=testveccpu[[1]] %o% testveccpu[[1]] )) 
-		warningslist<-c(warningslist,paste("%o% not working correctly"))
-	if(any(h(testvecgpu[[1]] %o% testveccpu[[1]])!=testveccpu[[1]] %o% testveccpu[[1]] )) 
-		warningslist<-c(warningslist,paste("%o% not working correctly"))
-	if(any(h(testvecgpu[[1]] %o% testveccpu[[1]])!=testveccpu[[1]] %o% testveccpu[[1]] )) 
-		warningslist<-c(warningslist,paste("%o% not working correctly"))
-	if(type(testvecgpu[[2]] %o% testveccpu[[1]])!= "single") 
-		warningslist<-c(warningslist,paste("%o% not working correctly (should return single)"))
-	if(type(testveccpu[[1]] %o% testvecgpu[[2]])!= "single") 
-		warningslist<-c(warningslist,paste("%o% not working correctly (should return single)"))
+
 	
-	if(any(h(gouter(testvecgpu[[1]] , testvecgpu[[1]]))!=testveccpu[[1]] %o% testveccpu[[1]] )) 
-		warningslist<-c(warningslist,paste("%o% not working correctly"))
-	if(any(h(gouter(testveccpu[[1]] , testvecgpu[[1]]))!=testveccpu[[1]] %o% testveccpu[[1]] )) 
-		warningslist<-c(warningslist,paste("%o% not working correctly"))
-	if(any(h(gouter(testvecgpu[[1]] , testveccpu[[1]]))!=testveccpu[[1]] %o% testveccpu[[1]] )) 
-		warningslist<-c(warningslist,paste("%o% not working correctly"))
-	
-	if(any(h(gkroneckerProd(testmatgpu[[1]][1:10,1:10] , testmatgpu[[1]][1:10,1:10]))!=testmatcpu[[1]][1:10,1:10] %x% testmatcpu[[1]][1:10,1:10] )) 
-		warningslist<-c(warningslist,paste("%o% not working correctly"))
-	if(any(h(gkroneckerProd(testmatcpu[[1]][1:10,1:10] , testmatgpu[[1]][1:10,1:10]))!=testmatcpu[[1]][1:10,1:10] %x% testmatcpu[[1]][1:10,1:10]  )) 
-		warningslist<-c(warningslist,paste("%o% not working correctly"))
-	if(any(h(testmatgpu[[1]][1:10,1:10] %x% testmatcpu[[1]][1:10,1:10])!=testmatcpu[[1]][1:10,1:10] %x% testmatcpu[[1]][1:10,1:10] )) 
-		warningslist<-c(warningslist,paste("%o% not working correctly"))
-	if(any(h(testvecgpu[[1]] %x% testveccpu[[1]])!=testveccpu[[1]] %x% testveccpu[[1]])) 
-		warningslist<-c(warningslist,paste("%o% not working correctly"))
-	
+	cat("Checking gsumby... \n")
 	if(any(h(gsumby(1:10, c(1,5),c(4,10)))!=c(10,45))) 
 		warningslist<-c(warningslist,paste("gsumby not working correctly"))
 	
+	cat("Checking transpose... \n")
+	for(i in 1:4){
+		if(any(h(t(testmatgpu[[i]])!=t(testmatcpu[[i]]))))
+			warningslist<-c(warningslist,paste("Error in transpose type:",i-1))
+		if(any(h(t(testvecgpu[[i]])!=t(testveccpu[[i]]))))
+			warningslist<-c(warningslist,paste("Error in transpose type:",i-1))
+	}
+	
+	
+	cat("Checking indexing and diag functions... \n")
 	for(i in 1:4) {
 		for(j in 1:4)
 			testvecgpu[[i]][2:5]=testvecgpu[[j]][7:10,]
@@ -560,8 +569,8 @@ gtest = function() {
 		if(any(h(testmatgpu[[i]][2:5,]!=testmatgpu[[j]][7:10,]))) 
 			warningslist<-c(warningslist,paste("Indexing problem for gvector"))
 		
-		testmatgpu[[i]][2:5,]=testmatgpu[[j]][7:10,]
-		if(any(h(testmatgpu[[i]][2:5,]!=testmatgpu[[j]][7:10,]))) 
+		testmatgpu[[i]][,2:5]=testmatgpu[[j]][,7:10]
+		if(any(h(testmatgpu[[i]][,2:5]!=testmatgpu[[j]][,7:10]))) 
 			warningslist<-c(warningslist,paste("Indexing problem for gvector"))
 		
 		testmatgpu[[i]][2:5,2:5]=testmatgpu[[j]][8:11,7:10]
@@ -569,35 +578,29 @@ gtest = function() {
 			warningslist<-c(warningslist,paste("Indexing problem for gvector"))
 		
 		diag(testmatgpu[[i]])=diag(testmatgpu[[j]])
-		if(any(h(diag(testmatgpu[[i]]))!=diag(testmatgpu[[i]]))) 
+		if(any(h(diag(testmatgpu[[i]])!=  convertType(diag(testmatgpu[[j]]) , as.integer(i-1))))) 
 			warningslist<-c(warningslist,paste("Indexing problem for gvector"))
 		
 		diag(testmatgpu[[i]])=diag(testmatcpu[[j]])
-		if(any(h(diag(testmatgpu[[i]]))!=diag(testmatcpu[[i]]))) 
+		if(any(h(diag(testmatgpu[[i]])!=convertType(diag(testmatgpu[[j]]), as.integer(i-1)))))
 			warningslist<-c(warningslist,paste("Indexing problem for gvector"))
 		
 		diag(testmatgpu[[i]])=(testscalercpu[[j]])
-		if(any(h(diag(testmatgpu[[i]]))!=(testscalercpu[[i]]))) 
+		if(any(h(diag(testmatgpu[[i]])!=convertType(testscalergpu[[j]] , as.integer(i-1))) ))
 			warningslist<-c(warningslist,paste("Indexing problem for gvector"))
 		
 		diag(testmatgpu[[i]])=(testscalergpu[[j]])
-		if(any(h(diag(testmatgpu[[i]]))!=(testscalergpu[[i]]))) 
+		if(any(h(diag(testmatgpu[[i]])!=convertType(testscalergpu[[j]] , as.integer(i-1))) )) 
 			warningslist<-c(warningslist,paste("Indexing problem for gvector"))
 		
 	}
 	
-	for(i in 1:4){
-		if(any(h(t(testmatgpu[[i]]))!=t(testmatcpu[[i]])))
-			warningslist<-c(warningslist,paste("Error in transpose type:",i))
-		if(any(h(t(testvecgpu[[i]]))!=t(testveccpu[[i]])))
-			warningslist<-c(warningslist,paste("Error in transpose type:",i))
-	}
+
 	
 	
 	
 	
-	
-	
+
 	dosimcont =function(qdistfun=qnorm, rdistfun=rnorm, nsims=100000, cell_ct=100) {
 		boundaries= qdistfun((0:cell_ct)/cell_ct)
 		y=1:(cell_ct+1)
@@ -684,12 +687,12 @@ gtest = function() {
 	
 	
 	#beta
-	mycheck(sapply(c(.01, .5, 1, 5, 10), function(shape1) {
-						tmp = lapply(c(.01, .5, 1, 5, 10), function(shape2) {
+	mycheck(sapply(c(.25, .5, 1, 5, 10), function(shape1) {
+						tmp = lapply(c(.5, 1, 5, 10), function(shape2) {
 									#	cat(shape1,shape2,"\n");
 									dosimcont(
 											qdistfun=function(q) qbeta(q,shape1,shape2),
-											rdistfun=function(n) grbeta(n,shape1,shape2),cell_ct=50
+											rdistfun=function(n) grbeta(n,shape1,shape2),cell_ct=25
 									)
 								})
 						return(unlist(tmp))
@@ -731,10 +734,57 @@ gtest = function() {
 						)
 					}), "grpois")
 	
-	for(i in 1:length(warningsList)) {
-		if(!is.null(name(warningsList[i]))){
+	cat("Checking distribution functions...\n")
+	#Distribution Checks
+	checkd=function(a,b,distfun) {
+		tmp=abs(as.numeric(a)-b)/b
+		tmp=tmp[abs(b)>10^-20 & is.finite(b)]
+		if(any(tmp > 10^-8))
+			warningslist<<-c(warningslist,paste("Problem with function",distfun))	
 			
+	}
+	checkd( gdnorm ((-10):10, mean=c(1,2), sd=c(1,2,3,4)), dnorm((-10):10, mean=c(1,2), sd=c(1,2,3,4)), "gdnorm")
+	checkd( gdgamma((1:20)/5, shape=c(1,2), rate=c(1,2,3,4)) , dgamma((1:20)/5, shape=c(1,2), rate=c(1,2,3,4)),"gdgamma")
+	checkd( gdunif((1:20)/5, min=c(1,2), max=3:6) , dunif((1:20)/5, min=c(1,2), max=3:6), "gdunif")
+	checkd( gdbeta((1:20)/5, shape1=c(1,2), shape2=c(1,2,3,4)) , dbeta((1:20)/5, shape1=c(1,2), shape2=c(1,2,3,4)), "gdbeta")
+	checkd( gdbinom(1:20, size=c(20,30), prob=c(1,2,3,4)/5) , dbinom(1:20, size=c(20,30), prob=c(1,2,3,4)/5), "gdbinom")
+	checkd( gdpois(1:20, c(5,10)) , dpois(1:20, c(5,10)), "gdbinom")
+
+	checkd( gdnorm ((-10):10, mean=c(1,2), sd=c(1,2,3,4), log=TRUE), dnorm((-10):10, mean=c(1,2), sd=c(1,2,3,4), log=TRUE), "gdnorm")
+	checkd( gdgamma((1:20)/5, shape=c(1,2), rate=c(1,2,3,4), log=TRUE) , dgamma((1:20)/5, shape=c(1,2), rate=c(1,2,3,4), log=TRUE),"gdgamma")
+	checkd( gdunif((1:20)/5, min=c(1,2), max=3:6, log=TRUE) , dunif((1:20)/5, min=c(1,2), max=3:6, log=TRUE), "gdunif")
+	checkd( gdbeta((1:20)/5, shape1=c(1,2), shape2=c(1,2,3,4), log=TRUE) , dbeta((1:20)/5, shape1=c(1,2), shape2=c(1,2,3,4), log=TRUE), "gdbeta")
+	checkd( gdbinom(1:20, size=c(20,30), prob=c(1,2,3,4)/5, log=TRUE) , dbinom(1:20, size=c(20,30), prob=c(1,2,3,4)/5, log=TRUE), "gdbinom")
+	checkd( gdpois(1:20, c(5,10), log=TRUE) , dpois(1:20, c(5,10), log=TRUE), "gdbinom")
+	
+	checkd( gqnorm(log((0:10)/10), mean=c(1,2), sd=c(1,2,3,4), log.p=TRUE,warn=FALSE),
+			qnorm(log((0:10)/10), mean=c(1,2), sd=c(1,2,3,4), log.p=TRUE), "gqnorm")
+	checkd( gqnorm((0:10)/10, mean=c(1,2), sd=c(1,2,3,4),warn=FALSE),
+			qnorm((0:10)/10, mean=c(1,2), sd=c(1,2,3,4)), "gqnorm")
+	checkd( gpnorm(((-10):10)/2, mean=c(1,2), sd=c(1,2,3,4), log.p=TRUE,warn=FALSE),
+			pnorm(((-10):10)/2, mean=c(1,2), sd=c(1,2,3,4), log.p=TRUE), "gpnorm")
+	checkd( gpnorm(((-10):10)/2, mean=c(1,2), sd=c(1,2,3,4),warn=FALSE),
+			pnorm(((-10):10)/2, mean=c(1,2), sd=c(1,2,3,4)), "gpnorm")
+	
+
+	
+	if(length(warningslist)==0)
+		cat("No errors or warnings\n")
+	else {
+		cat("\n\nThe following errors/warnings were detected:\n")
+		#browser()
+		for(i in 1:length(warningslist)) {
+			if(is.null(names(warningslist[i])))
+				cat("Error:\n")
+			else if(nchar(names(warningslist[i]))!=0){
+				cat(names(warningslist[i]),":\n")
+			} else{
+				cat("Error:\n")
+			}
+			for(err in warningslist[i])
+				cat("***",err,"\n")
 		}
 	}
 	
+	return(TRUE)
 }

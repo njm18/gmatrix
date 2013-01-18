@@ -11,10 +11,9 @@
 		template <typename T>\
 	    __global__ void kernal_##MNAME (T* x, T* ret, int n, int operations_per_thread) \
 		{\
-			int id = blockDim.x * blockIdx.x + threadIdx.x;\
-			int mystart = operations_per_thread * id;\
-			int mystop = operations_per_thread + mystart;\
-			for ( int i = mystart; i < mystop; i++) {\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
 				if(i<n) {\
 					ret[i] = MCFUN;\
 				}\
@@ -43,10 +42,9 @@
 		template <typename T>\
 	    __global__ void kernal_##MNAME (T* x, int* ret, int n, int operations_per_thread) \
 		{\
-			int id = blockDim.x * blockIdx.x + threadIdx.x;\
-			int mystart = operations_per_thread * id;\
-			int mystop = operations_per_thread + mystart;\
-			for ( int i = mystart; i < mystop; i++) {\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
 				if(i<n) {\
 					ret[i] = MCFUN;\
 				}\
@@ -133,10 +131,9 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 		template <typename T>\
 		__global__ void kernal_same_size_##MNAME (T* y, T* x,T* ret, int N, int operations_per_thread)\
 		{\
-			int id = blockDim.x * blockIdx.x + threadIdx.x;\
-			int mystart = operations_per_thread * id;\
-			int mystop = operations_per_thread + mystart;\
-			for ( int i = mystart; i < mystop; i++) {\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
 				if (i < N) {\
 					ret[i] = MCFUN1 ;\
 				}\
@@ -164,10 +161,9 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 		template <typename T>\
 		__global__ void kernal_scaler_##MNAME (T* y, T* ret, T c, int N, int operations_per_thread)\
 		{\
-			int id = blockDim.x * blockIdx.x + threadIdx.x;\
-			int mystart = operations_per_thread * id;\
-			int mystop = operations_per_thread + mystart;\
-			for ( int i = mystart; i < mystop; i++) {\
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+			i < mystop; i+=blockDim.x) {\
 				if (i < N) {\
 					ret[i] = MCFUN3 ;\
 				}\
@@ -197,10 +193,9 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 		template <typename T>\
 		__global__ void kernal_diff_size_##MNAME (T* y, T* x, T* ret, int ny, int nx, int operations_per_thread)\
 		{\
-			int id = blockDim.x * blockIdx.x + threadIdx.x;\
-			int mystart = operations_per_thread * id;\
-			int mystop = operations_per_thread + mystart;\
-			for ( int i = mystart; i < mystop; i++) {\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
 				int j = i % nx;\
 				if (i < ny) {\
 					ret[i] = MCFUN2 ;\
@@ -232,10 +227,9 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 		template <typename T>\
 		__global__ void kernal_same_size_##MNAME (T* y, T* x,T* ret, int N, int operations_per_thread)\
 		{\
-			int id = blockDim.x * blockIdx.x + threadIdx.x;\
-			int mystart = operations_per_thread * id;\
-			int mystop = operations_per_thread + mystart;\
-			for ( int i = mystart; i < mystop; i++) {\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
 				if (i < N) {\
 					ret[i] = MCFUN1 ;\
 				}\
@@ -265,10 +259,9 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 		template <typename T>\
 		__global__ void kernal_scaler_##MNAME (T* y, T* ret, T c, int N, int operations_per_thread)\
 		{\
-			int id = blockDim.x * blockIdx.x + threadIdx.x;\
-			int mystart = operations_per_thread * id;\
-			int mystop = operations_per_thread + mystart;\
-			for ( int i = mystart; i < mystop; i++) {\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
 				if (i < N) {\
 					ret[i] = MCFUN3 ;\
 				}\
@@ -301,10 +294,9 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 		template <typename T>\
 		__global__ void kernal_diff_size_##MNAME (T* y, T* x, T* ret, int ny, int nx, int operations_per_thread)\
 		{\
-			int id = blockDim.x * blockIdx.x + threadIdx.x;\
-			int mystart = operations_per_thread * id;\
-			int mystop = operations_per_thread + mystart;\
-			for ( int i = mystart; i < mystop; i++) {\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
 				int j = i % nx;\
 				if (i < ny) {\
 					ret[i] = MCFUN2 ;\
@@ -338,10 +330,9 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 		template <typename T>\
 		__global__ void kernal_same_size_##MNAME (T* y, T* x, int* ret, int N, int operations_per_thread)\
 		{\
-			int id = blockDim.x * blockIdx.x + threadIdx.x;\
-			int mystart = operations_per_thread * id;\
-			int mystop = operations_per_thread + mystart;\
-			for ( int i = mystart; i < mystop; i++) {\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
 				if (i < N) {\
 					ret[i] = MCFUN1 ;\
 				}\
@@ -371,10 +362,9 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 		template <typename T>\
 		__global__ void kernal_scaler_##MNAME (T* y, int* ret, T c, int N, int operations_per_thread)\
 		{\
-			int id = blockDim.x * blockIdx.x + threadIdx.x;\
-			int mystart = operations_per_thread * id;\
-			int mystop = operations_per_thread + mystart;\
-			for ( int i = mystart; i < mystop; i++) {\
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+			i < mystop; i+=blockDim.x) {\
 				if (i < N) {\
 					ret[i] = MCFUN3 ;\
 				}\
@@ -407,10 +397,9 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 		template <typename T>\
 		__global__ void kernal_diff_size_##MNAME (T* y, T* x, int* ret, int ny, int nx, int operations_per_thread)\
 		{\
-			int id = blockDim.x * blockIdx.x + threadIdx.x;\
-			int mystart = operations_per_thread * id;\
-			int mystop = operations_per_thread + mystart;\
-			for ( int i = mystart; i < mystop; i++) {\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
 				int j = i % nx;\
 				if (i < ny) {\
 					ret[i] = MCFUN2 ;\
@@ -445,10 +434,9 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 		template <typename T>\
 		__global__ void kernal_same_size_##MNAME (T* y, T* x, int* ret, int N, int operations_per_thread)\
 		{\
-			int id = blockDim.x * blockIdx.x + threadIdx.x;\
-			int mystart = operations_per_thread * id;\
-			int mystop = operations_per_thread + mystart;\
-			for ( int i = mystart; i < mystop; i++) {\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
 				if (i < N) {\
 					ret[i] = MCFUN1 ;\
 				}\
@@ -475,10 +463,9 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 		template <typename T>\
 		__global__ void kernal_scaler_##MNAME (T* y, int* ret, T c, int N, int operations_per_thread)\
 		{\
-			int id = blockDim.x * blockIdx.x + threadIdx.x;\
-			int mystart = operations_per_thread * id;\
-			int mystop = operations_per_thread + mystart;\
-			for ( int i = mystart; i < mystop; i++) {\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
 				if (i < N) {\
 					ret[i] = MCFUN3 ;\
 				}\
@@ -505,10 +492,9 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 		template <typename T>\
 		__global__ void kernal_diff_size_##MNAME (T* y, T* x, int* ret, int ny, int nx, int operations_per_thread)\
 		{\
-			int id = blockDim.x * blockIdx.x + threadIdx.x;\
-			int mystart = operations_per_thread * id;\
-			int mystop = operations_per_thread + mystart;\
-			for ( int i = mystart; i < mystop; i++) {\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+			i < mystop; i+=blockDim.x) {\
 				int j = i % nx;\
 				if (i < ny) {\
 					ret[i] = MCFUN2 ;\

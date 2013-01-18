@@ -10,6 +10,15 @@
 \alias{\%x\%,gvector,numeric-method}
 \alias{\%x\%,numeric,gmatrix-method}
 \alias{\%x\%,numeric,gvector-method}
+\alias{\%x\%,gmatrix,matrix-method}
+\alias{\%x\%,gvector,matrix-method}
+\alias{\%x\%,matrix,gmatrix-method}
+\alias{\%x\%,matrix,gvector-method}
+
+
+
+
+
 \title{
 Kronecker Product
 }

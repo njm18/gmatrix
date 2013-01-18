@@ -225,12 +225,12 @@ setMethod("crossprod", signature(x = "gmatrix", y = "missing"),
 			if(x@type>1L)
 				type(x)=0
 			checkDevice(x@device)
-			return(.Call("matrix_multiply", x, x, TRUE, FALSE,x@ptr, x@type))
+			return(.Call("matrix_multiply", x, x, TRUE, FALSE,x@type))
 		})
 setMethod("crossprod", signature(x = "gmatrix", y = "gmatrix"), 
 		function(x,y){ 
 			eval(.exprs_sf_xy)
-			return(.Call("matrix_multiply", x, y, TRUE, FALSE,x@ptr, x@type))
+			return(.Call("matrix_multiply", x, y, TRUE, FALSE,x@type))
 		})
 
 setMethod("crossprod", signature(x = "gmatrix", y = "matrix"), 
@@ -240,7 +240,7 @@ setMethod("crossprod", signature(x = "gmatrix", y = "matrix"),
 			else
 				y=g(y)
 			eval(.exprs_sf_xy)
-			return(.Call("matrix_multiply", x, y, TRUE, FALSE,x@ptr, x@type))
+			return(.Call("matrix_multiply", x, y, TRUE, FALSE, x@type))
 		})
 
 setMethod("crossprod", signature(x = "matrix", y = "gmatrix"), 
@@ -250,32 +250,66 @@ setMethod("crossprod", signature(x = "matrix", y = "gmatrix"),
 			else
 				x=g(x)
 			eval(.exprs_sf_xy)
-			return(.Call("matrix_multiply",  x, y, TRUE, FALSE,x@ptr, x@type))
+			return(.Call("matrix_multiply",  x, y, TRUE, FALSE,x@type))
 		})
-setMethod("crossprod", signature(x = "numeric", y = "gmatrix"), 
-		function(x,y) return(x %*% y))
-setMethod("crossprod", signature(x = "gmatrix", y = "numeric"), 
-		function(x,y) return(x %*% y))
-setMethod("crossprod", signature(x = "logical", y = "gmatrix"), 
-		function(x,y) return(x %*% y))
-setMethod("crossprod", signature(x = "gmatrix", y = "logical"), 
-		function(x,y) return(x %*% y))
-setMethod("crossprod", signature(x = "gvector", y = "gmatrix"), 
-		function(x,y) return(x %*% y))
-setMethod("crossprod", signature(x = "gmatrix", y = "gvector"), 
-		function(x,y) return(x %*% y))
-setMethod("crossprod", signature(x = "gvector", y = "gvector"), 
-		function(x,y) return(x %*% y))
-setMethod("crossprod", signature(x = "gvector", y = "missing"), 
-		function(x,y) return(x %*% x))
-setMethod("crossprod", signature(x = "gvector", y = "numeric"), 
-		function(x,y) return(x %*% y))
-setMethod("crossprod", signature(x = "numeric", y = "gvector"), 
-		function(x,y) return(x %*% y))
-setMethod("crossprod", signature(x = "gvector", y = "logical"), 
-		function(x,y) return(x %*% y))
-setMethod("crossprod", signature(x = "logical", y = "gvector"), 
-		function(x,y) return(x %*% y))
+
+setMethod("crossprod", signature(x = "matrix", y = "gmatrix"), 
+		function(x,y){ 
+			if(y@type==1L)
+				x=g(x, type=1L)
+			else
+				x=g(x)
+			eval(.exprs_sf_xy)
+			return(.Call("matrix_multiply",  x, y, TRUE, FALSE,x@type))
+		})
+
+
+.cp = function(x,y) {
+	flgx=!(class(x) %in% c("gmatrix", "gvector"))
+	flgy=!(class(y) %in% c("gmatrix", "gvector"))
+	if(flgx) {
+		if(!flgy) {
+			if(y@type==1)
+				x=g(x,type=1L)
+			else
+				x=g(x)
+		} else
+			x=g(x)
+	}
+	if(flgy) {
+		if(!flgx) {
+			if(x@type==1)
+				y=g(y,type=1L)
+			else
+				y=g(y)
+		} else
+			y=g(y)
+	}
+	eval(.exprs_sf_xy)
+	if(class(x)=="gvector"){
+		x=gmatrix(x,nrow=1,dup=FALSE)
+		if(class(y)=="gvector") 
+			y=gmatrix(y,ncol=1,dup=FALSE)
+		return(.Call("matrix_multiply",  x, y, FALSE, FALSE,x@type))
+	}
+	#if here then y is a gvector (b/c one of the two must be a gvector) and x is a gmatrix
+	y=gmatrix(y,ncol=1,dup=FALSE)
+	return(.Call("matrix_multiply",  x, y, TRUE, FALSE,x@type))
+}
+setMethod("crossprod", signature(x = "numeric", y = "gmatrix"), .cp)
+setMethod("crossprod", signature(x = "gmatrix", y = "numeric"),  .cp)
+setMethod("crossprod", signature(x = "logical", y = "gmatrix"),  .cp)
+setMethod("crossprod", signature(x = "gmatrix", y = "logical"),  .cp)
+setMethod("crossprod", signature(x = "gvector", y = "gmatrix"),  .cp)
+setMethod("crossprod", signature(x = "gmatrix", y = "gvector"),  .cp)
+setMethod("crossprod", signature(x = "gvector", y = "gvector"),  .cp)
+setMethod("crossprod", signature(x = "gvector", y = "missing"),  .cp)
+setMethod("crossprod", signature(x = "gvector", y = "numeric"), .cp)
+setMethod("crossprod", signature(x = "numeric", y = "gvector"),  .cp)
+setMethod("crossprod", signature(x = "gvector", y = "logical"),  .cp)
+setMethod("crossprod", signature(x = "logical", y = "gvector"),  .cp)
+setMethod("crossprod", signature(x = "gvector", y = "matrix"), .cp)
+setMethod("crossprod", signature(x = "matrix", y = "gvector"), .cp)
 
 ##############################################
 #              Transpose Cross Product
@@ -286,12 +320,12 @@ setMethod("tcrossprod", signature(x = "gmatrix", y = "missing"),
 			if(x@type>1L)
 				type(x)=0
 			checkDevice(x@device)
-			return(.Call("matrix_multiply", x, x, FALSE, TRUE,x@ptr, x@type))
+			return(.Call("matrix_multiply", x, x, FALSE, TRUE,x@type))
 		})
 setMethod("tcrossprod", signature(x = "gmatrix", y = "gmatrix"), 
 		function(x,y){
 			eval(.exprs_sf_xy)
-			return(.Call("matrix_multiply", x, y, FALSE, TRUE,x@ptr, x@type))
+			return(.Call("matrix_multiply", x, y, FALSE, TRUE,x@type))
 		})
 setMethod("tcrossprod", signature(x = "gmatrix", y = "matrix"), 
 		function(x,y){
@@ -300,7 +334,7 @@ setMethod("tcrossprod", signature(x = "gmatrix", y = "matrix"),
 			else
 				y=g(y)
 			eval(.exprs_sf_xy)
-			return(.Call("matrix_multiply",x, y, FALSE, TRUE,x@ptr, x@type))
+			return(.Call("matrix_multiply",x, y, FALSE, TRUE, x@type))
 		})
 setMethod("tcrossprod", signature(x = "matrix", y = "gmatrix"), 
 		function(x,y){
@@ -309,34 +343,63 @@ setMethod("tcrossprod", signature(x = "matrix", y = "gmatrix"),
 			else
 				x=g(x)
 			eval(.exprs_sf_xy)
-			return(.Call("matrix_multiply",x ,y, FALSE, TRUE,x@ptr, x@type))
+			return(.Call("matrix_multiply",x ,y, FALSE, TRUE,  x@type))
 		})
 
-setMethod("tcrossprod", signature(x = "numeric", y = "gmatrix"), 
-		function(x,y) return(x %*% y))
-setMethod("tcrossprod", signature(x = "gmatrix", y = "numeric"), 
-		function(x,y) return(x %*% y))
-setMethod("tcrossprod", signature(x = "logical", y = "gmatrix"), 
-		function(x,y) return(x %*% y))
-setMethod("tcrossprod", signature(x = "gmatrix", y = "logical"), 
-		function(x,y) return(x %*% y))
-setMethod("tcrossprod", signature(x = "gvector", y = "gmatrix"), 
-		function(x,y) return(x %*% y))
-setMethod("tcrossprod", signature(x = "gmatrix", y = "gvector"), 
-		function(x,y) return(x %*% y))
-setMethod("tcrossprod", signature(x = "gvector", y = "gvector"), 
-		function(x,y) return(x %*% y))
-setMethod("tcrossprod", signature(x = "gvector", y = "missing"), 
-		function(x,y) return(x %*% x))
-setMethod("tcrossprod", signature(x = "gvector", y = "numeric"), 
-		function(x,y) return(x %*% y))
-setMethod("tcrossprod", signature(x = "numeric", y = "gvector"), 
-		function(x,y) return(x %*% y))
-setMethod("tcrossprod", signature(x = "gvector", y = "logical"), 
-		function(x,y) return(x %*% y))
-setMethod("tcrossprod", signature(x = "logical", y = "gvector"), 
-		function(x,y) return(x %*% y))
+.tcp = function(x,y) {
+	flgx=!(class(x) %in% c("gmatrix", "gvector"))
+	flgy=!(class(y) %in% c("gmatrix", "gvector"))
+	if(flgx) {
+		if(!flgy) {
+			if(y@type==1)
+				x=g(x,type=1L)
+			else
+				x=g(x)
+		} else
+			x=g(x)
+	}
+	if(flgy) {
+		if(!flgx) {
+			if(x@type==1)
+				y=g(y,type=1L)
+			else
+				y=g(y)
+		} else
+			y=g(y)
+	}
 
+	eval(.exprs_sf_xy)
+	#browser()
+	if(class(x)=="gvector"){
+		if(class(y)=="gvector") {
+			x=gmatrix(x,ncol=1,dup=FALSE)
+			y=gmatrix(y,nrow=1,dup=FALSE)
+			return(.Call("matrix_multiply",  x, y, FALSE, FALSE, x@type))
+		} else {
+		#	browser()
+			x=gmatrix(x,nrow=1,dup=FALSE)
+			return(.Call("matrix_multiply",  x, y, FALSE, TRUE, x@type))
+		}
+	}
+	#if here then y is a gvector (b/c one of the two must be a gvector) and x is a gmatrix
+	y=gmatrix(y,ncol=1,dup=FALSE)
+	return(.Call("matrix_multiply",  x, y, FALSE, TRUE, x@type))
+}
+
+setMethod("tcrossprod", signature(x = "numeric", y = "gmatrix"), .tcp)
+setMethod("tcrossprod", signature(x = "gmatrix", y = "numeric"), .tcp)
+setMethod("tcrossprod", signature(x = "logical", y = "gmatrix"), .tcp)
+setMethod("tcrossprod", signature(x = "gmatrix", y = "logical"), .tcp)
+setMethod("tcrossprod", signature(x = "gvector", y = "gmatrix"), .tcp)
+setMethod("tcrossprod", signature(x = "gmatrix", y = "gvector"), .tcp)
+setMethod("tcrossprod", signature(x = "gvector", y = "gvector"), .tcp)
+setMethod("tcrossprod", signature(x = "gvector", y = "missing"), .tcp)
+setMethod("tcrossprod", signature(x = "gvector", y = "numeric"), .tcp)
+setMethod("tcrossprod", signature(x = "numeric", y = "gvector"), .tcp)
+setMethod("tcrossprod", signature(x = "gvector", y = "logical"), .tcp)
+setMethod("tcrossprod", signature(x = "logical", y = "gvector"), .tcp)
+setMethod("tcrossprod", signature(x = "gvector", y = "matrix"), .tcp)
+setMethod("tcrossprod", signature(x = "matrix", y = "gvector"), .tcp)
 #####################################################
 #   Outer Product
 #####################################################
@@ -420,7 +483,7 @@ setMethod("%o%", signature(X = "gvector", Y= "gvector"),
 setMethod("%o%", signature(X = "numeric", Y= "gvector"), 
 		function(X,Y) {
 			if(Y@type==1L) 
-				return(gmatrix(X,ncol=1,dup=FALSE, type=1) %*% gmatrix(Y,nrow=1,dup=FALSE))
+				return(gmatrix(X,ncol=1,dup=FALSE, type=1L) %*% gmatrix(Y,nrow=1,dup=FALSE))
 			else
 				return(gmatrix(X,ncol=1,dup=FALSE) %*% gmatrix(Y,nrow=1,dup=FALSE))
 			
@@ -428,8 +491,9 @@ setMethod("%o%", signature(X = "numeric", Y= "gvector"),
 
 setMethod("%o%", signature(X = "gvector", Y= "numeric"), 
 		function(X,Y) {
+	
 			if(X@type==1L) 
-				return(gmatrix(X,ncol=1,dup=FALSE) %*% gmatrix(Y,nrow=1,dup=FALSE, type=1))
+				return(gmatrix(X,ncol=1,dup=FALSE) %*% gmatrix(Y,nrow=1,dup=FALSE, type=1L))
 			else
 				return(gmatrix(X,ncol=1,dup=FALSE) %*% gmatrix(Y,nrow=1,dup=FALSE))
 		})
@@ -437,7 +501,7 @@ setMethod("%o%", signature(X = "gvector", Y= "numeric"),
 setMethod("%o%", signature(X = "logical", Y= "gvector"), 
 		function(X,Y) {
 			if(Y@type==1L) 
-				return(gmatrix(X,ncol=1,dup=FALSE, type=1) %*% gmatrix(Y,nrow=1,dup=FALSE))
+				return(gmatrix(X,ncol=1,dup=FALSE, type=1L) %*% gmatrix(Y,nrow=1,dup=FALSE))
 			else
 				return(gmatrix(X,ncol=1,dup=FALSE) %*% gmatrix(Y,nrow=1,dup=FALSE))
 			
@@ -446,7 +510,7 @@ setMethod("%o%", signature(X = "logical", Y= "gvector"),
 setMethod("%o%", signature(X = "gvector", Y= "logical"), 
 		function(X,Y) {
 			if(X@type==1L) 
-				return(gmatrix(X,ncol=1,dup=FALSE) %*% gmatrix(Y,nrow=1,dup=FALSE, type=1))
+				return(gmatrix(X,ncol=1,dup=FALSE) %*% gmatrix(Y,nrow=1,dup=FALSE, type=1L))
 			else
 				return(gmatrix(X,ncol=1,dup=FALSE) %*% gmatrix(Y,nrow=1,dup=FALSE))
 		})
@@ -721,8 +785,8 @@ gkroneckerProd=function(A,B) {
 	if(class(B)=="gvector")
 		B=gmatrix(B, dup=FALSE)
 	if(class(A)!="gmatrix") {
-		if(is.matrix(A)) {
-			if(class(B)=="gmatrix") {
+		if(is.matrix(A)|| is.vector(B)) {
+			if(class(B)%in%c("gmatrix","gvector")) {
 				if(B@type==1L)
 					A=as.gmatrix(A, type=1L)
 				else
@@ -730,11 +794,11 @@ gkroneckerProd=function(A,B) {
 			} else
 				A=as.gmatrix(A)
 		}else
-			stop("Input 'A' must be a 'matrix' or 'gmatrix'.")
+			stop("Input 'A' must be a 'vector', 'matrix', 'gmatrix' or 'gvector'.")
 	}
 	if(class(B)!="gmatrix") {
-		if(is.matrix(B))
-			if(class(A)=="gmatrix"){
+		if(is.matrix(B) || is.vector(B))
+			if(class(A)%in%c("gmatrix","gvector")){
 				if(A@type==1L) 
 					B=as.gmatrix(B, type=1L)
 				else
@@ -742,7 +806,7 @@ gkroneckerProd=function(A,B) {
 			} else
 				B=as.gmatrix(B)
 		else
-			stop("Input 'A' must be a 'matrix' or 'gmatrix'.")
+			stop("Input 'B' must be a 'vector', 'matrix', 'gmatrix' or 'gvector'.")
 	}
 	.exprs_AB
 #SEXP gpu_kronecker(SEXP A_in, SEXP B_in,SEXP n_A_row_in,SEXP n_A_col_in, SEXP n_B_row_in,SEXP n_B_col_in);
@@ -774,13 +838,21 @@ gsumby=function(v,startPos,stopPos) {
 
 
 setMethod("%x%", signature(X = "gvector", Y = "gvector"), function(X,Y)	return(as.gvector(gkroneckerProd(X,Y),dup=FALSE)))
-setMethod("%x%", signature(X = "gvector", Y = "numeric"), function(X,Y)	return(as.gvector(gkroneckerProd(X,Y),dup=FALSE)))
+setMethod("%x%", signature(X = "gvector", Y = "numeric"), function(X,Y)	return(as.gvector(gkroneckerProd(X,Y),dup=FALSE)) )
 setMethod("%x%", signature(X = "numeric", Y = "gvector"),  function(X,Y)	return(as.gvector(gkroneckerProd(X,Y),dup=FALSE)))
+
 setMethod("%x%", signature(X = "gmatrix", Y = "gmatrix"), function(X,Y)	return(gkroneckerProd(X,Y)))
-setMethod("%x%", signature(X = "gmatrix", Y = "numeric"),function(X,Y)	return(gkroneckerProd(X,Y)))
-setMethod("%x%", signature(X = "numeric", Y = "gmatrix"), function(X,Y)	return(gkroneckerProd(X,Y)))
 setMethod("%x%", signature(X = "gmatrix", Y = "gvector"), function(X,Y)	return(gkroneckerProd(X,Y)))
 setMethod("%x%", signature(X = "gvector", Y = "gmatrix"), function(X,Y)	return(gkroneckerProd(X,Y)))
+
+setMethod("%x%", signature(X = "gmatrix", Y = "numeric"),function(X,Y)	return(gkroneckerProd(X,Y)))
+setMethod("%x%", signature(X = "numeric", Y = "gmatrix"), function(X,Y)	return(gkroneckerProd(X,Y)))
+
+setMethod("%x%", signature(X = "gmatrix", Y = "matrix"),function(X,Y)	return(gkroneckerProd(X,Y)))
+setMethod("%x%", signature(X = "matrix", Y = "gmatrix"), function(X,Y)	return(gkroneckerProd(X,Y)))
+
+setMethod("%x%", signature(X = "gvector", Y = "matrix"),function(X,Y)	return(gkroneckerProd(X,Y)))
+setMethod("%x%", signature(X = "matrix", Y = "gvector"), function(X,Y)	return(gkroneckerProd(X,Y)))
 
 ####################################### 
 # elementwise special functions

@@ -55,13 +55,11 @@ template <typename T>
 __global__ void kernel_rnorm(curandState* state, int sims_per_thread,
 		T* param1, T* param2, int n1, int n2, int n, T* ret)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int simstart = sims_per_thread * id;
-	int simstop = sims_per_thread + simstart;
+	int id =blockDim.x * blockIdx.x  + threadIdx.x;
 	curandState localState = state[id];
 
-
-	for ( int i = simstart; i < simstop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * sims_per_thread;
+	for ( int i = (blockDim.x*blockIdx.x*sims_per_thread +threadIdx.x);i<mystop;i+=blockDim.x) {
 		/* Generate pseudorandom  numbers*/
 		if(i<n)
 			ret[i]=NRM*param2[i % n2] + param1[i % n1];
@@ -105,30 +103,29 @@ SEXP gpu_rnorm(SEXP in_n, SEXP in_mean, SEXP in_sd, SEXP in_n_mean, SEXP in_n_sd
 
 
 
-#define MY_Z (x[i] - param1[1 % n1])/sd
+#define MY_Z (x[i] - param1[i % n1])/sd
 
 
 template <typename T>
 __global__ void kernel_dnorm(T* x, T* param1, T* param2, int n1, int n2, int n,
-		T* ret, int log, int operations_per_thread)
+		T* ret, int log1, int operations_per_thread)
 {
 
 	T z;
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
-	for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 
 		if(i < n) {
 			T sd=param2[i % n2];
 			if(sd<0)
 				ret[i]=NAN;
-			else if(log==0) {
+			else if(log1==0) {
 				z= MY_Z;
-				ret[i]=exp(-M_LN_SQRT_2PI -z*z/2 );
+				ret[i]=exp(-(M_LN_SQRT_2PI  + log(sd) + z*z/2) );
 			} else {
 				z= MY_Z;
-				ret[i]=-M_LN_SQRT_2PI -z*z/2;
+				ret[i]=-(M_LN_SQRT_2PI  + log(sd) + z*z/2);
 			}
 		}
 	}
@@ -171,10 +168,9 @@ __global__ void kernel_pnorm(T* x, T* param1, T* param2, int n1, int n2, int n,
 {
 
 	T tmp;
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
-	for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		if(i < n){
 			T sd=param2[i % n2];
 			if(sd<0)
@@ -236,10 +232,9 @@ __global__ void kernel_qnorm(T* x, T* param1, T* param2, int n1, int n2, int n,
 {
 
 	T tmp;
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
-	for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		if(i < n){
 			if(lg==0)
 				tmp=x[i];
@@ -251,7 +246,7 @@ __global__ void kernel_qnorm(T* x, T* param1, T* param2, int n1, int n2, int n,
 				tmp=-1*tmp;
 			T sd=param2[i % n2];
 			if(sd>=0)
-				ret[i]=tmp*sd + param1[1 % n1];
+				ret[i]=tmp*sd + param1[i % n1];
 			else
 				ret[i]=NAN;
 
@@ -300,21 +295,22 @@ template <typename T>
 __global__ void kernel_dunif(T* x, T* param1, T* param2, int n1, int n2, int n,
 		T* ret, int lg, int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
-	for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		if(i < n) {
 			T mymin=param1[i % n1];
 			T mymax=param2[i % n2];
-			if(lg==0) {
+			if(mymin>=mymax){
+				ret[i]=NAN;
+			} else if(lg==0) {
 				if(mymin <= x[i] && x[i] <= mymax )
-					ret[i]=1/(mymin - mymax);
+					ret[i]=1/(mymax - mymin);
 				else
 					ret[i]=0;
 			} else {
 				if(mymin <= x[i] && x[i] <= mymax )
-					ret[i]=log(1/(mymin - mymax));
+					ret[i]=log(1/(mymax - mymin));
 				else
 					ret[i]=log(0.0);
 			}
@@ -361,14 +357,12 @@ template <typename T>
 __global__ void kernel_runif(curandState* state, int sims_per_thread,
 		T* param1, T* param2, int n1, int n2, int n, T* ret)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int simstart = sims_per_thread * id;
-	int simstop = sims_per_thread + simstart;
-
+	int id =blockDim.x * blockIdx.x  + threadIdx.x;
 	curandState localState = state[id];
 
-
-	for (int i = simstart; i < simstop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * sims_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * sims_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		T mymin=param1[i % n1];
 		//printf("i = %d, p1 = %d, p2 = %d\n", i,param1[i % n1], param2[i % n2] );
 		if(i<n)
@@ -476,13 +470,12 @@ template <typename T>
 __global__ void kernel_rgamma(curandState* state, int sims_per_thread,
 		T* param1, T* param2, int n1, int n2, int n, T* ret)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int simstart = sims_per_thread * id;
-	int simstop = sims_per_thread + simstart;
+	int id =blockDim.x * blockIdx.x  + threadIdx.x;
 	curandState localState = state[id];
 
-
-	for (int i = simstart; i < simstop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * sims_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * sims_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		if(i<n) {
 			ret[i]=rgamma<T>(&localState, param1[i % n1], param2[i % n2]);
 		}
@@ -528,10 +521,9 @@ template <typename T>
 __global__ void kernel_dgamma(T* x, T* param1, T* param2, int n1, int n2, int n,
 		T* ret, int lg, int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
-	for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		if(i < n) {
 			T shape=param1[i % n1];
 			T scale=param2[i % n2];
@@ -600,13 +592,12 @@ template <typename T>
 __global__ void kernel_rbeta(curandState* state, int sims_per_thread,
 		T* param1, T* param2, int n1, int n2, int n, T* ret)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int simstart = sims_per_thread * id;
-	int simstop = sims_per_thread + simstart;
+	int id =blockDim.x * blockIdx.x  + threadIdx.x;
 	curandState localState = state[id];
 
-
-	for (int i = simstart; i < simstop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * sims_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * sims_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		if(i<n) {
 			ret[i]=rbeta<T>(&localState, param1[i % n1], param2[i % n2]);
 		}
@@ -655,30 +646,65 @@ template <typename T>
 __global__ void kernel_dbeta(T* x, T* param1, T* param2, int n1, int n2, int n,
 		T* ret, int lg, int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
-	for ( int i = mystart; i < mystop; i++) {
+
+	T tmp;
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
+
+		T alpha=param1[i % n1];
+		T beta=param2[i % n2];
+		T myx=x[i];
+		if(alpha<=0 || beta<=0)
+			tmp=NAN;
+		else if(lg==0) {
+			if(myx==0) {
+				if(alpha<1)
+					tmp = -log(0.0);
+				else if(alpha==1)
+					tmp = exp( lgamma(alpha+ beta) -lgamma(alpha) - lgamma(beta));
+				else
+					tmp = 0;
+
+			} else if(myx==1) {
+				if(beta<1)
+					tmp = -log(0.0);
+				else if(beta==1)
+					tmp = exp( lgamma(alpha+ beta) -lgamma(alpha) - lgamma(beta));
+				else
+					tmp = 0;
+			} else if( myx > 0 && myx<1 )
+				tmp=exp( lgamma(alpha+ beta) -lgamma(alpha) - lgamma(beta) + (alpha-1)*log(myx) + (beta-1)*log(1-myx) );
+			else
+				tmp=0;
+		} else {
+			if(myx==0) {
+				if(alpha<1)
+					tmp = -log(0.0);
+				else if(alpha==1)
+					tmp = ( lgamma(alpha+ beta) -lgamma(alpha) - lgamma(beta));
+				else
+					tmp = log(0.0);
+
+			} else if(myx==1) {
+				if(beta<1)
+					tmp = -log(0.0);
+				else if(beta==1)
+					tmp = ( lgamma(alpha+ beta) -lgamma(alpha) - lgamma(beta));
+				else
+					tmp = log(0.0);
+			} else if( myx > 0 && myx<1 )
+				tmp=lgamma(alpha+ beta) -lgamma(alpha) - lgamma(beta) + (alpha-1)*log(myx) + (beta-1)*log(1-myx);
+			else
+				tmp=log(0.0);
+		}
+		__syncthreads();
 		if(i < n) {
-			T alpha=param1[i % n1];
-			T beta=param2[i % n2];
-			T myx=x[i];
-			if(alpha<=0 || beta<=0)
-				ret[i]=NAN;
-			else if(lg==0) {
-				if( myx >= 0 && myx<=1 )
-					ret[i]=exp( lgamma(alpha) + lgamma(beta) - lgamma(alpha+ beta) + (alpha-1)*log(myx) + (beta-1)*log(1-myx) );
-				else
-					ret[i]=0;
-			} else {
-				if( myx >= 0 && myx<=1 )
-					ret[i]=lgamma(alpha) + lgamma(beta) - lgamma(alpha+ beta) + (alpha-1)*log(myx) + (beta-1)*log(1-myx) ;
-				else
-					ret[i]=log(0.0);
-			}
+			ret[i]=tmp;
 		}
 	}
 }
+
 
 
 
@@ -778,10 +804,9 @@ template <typename T>
 __global__ void kernel_dbinom(T* x, T* param1, T* param2, int n1, int n2, int n,
 		T* ret, int lg, int operations_per_thread)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int mystart = operations_per_thread * id;
-	int mystop = operations_per_thread + mystart;
-	for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		if(i < n) {
 			T N=param1[i % n1];
 			T p=param2[i % n2];
@@ -840,13 +865,12 @@ template <typename T>
 __global__ void kernel_rbinom(curandState* state, int sims_per_thread,
 		T* param1, T* param2, int n1, int n2, int n, int* ret)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int simstart = sims_per_thread * id;
-	int simstop = sims_per_thread + simstart;
+	int id =blockDim.x * blockIdx.x  + threadIdx.x;
 	curandState localState = state[id];
 
-
-	for (int i = simstart; i < simstop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * sims_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * sims_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		if(i<n) {
 			int N = (int) param1[i % n1];
 			T p = param2[i % n2];
@@ -953,10 +977,9 @@ template <typename T>
 __global__ void kernel_dpois(T* x, T* param1,  int n1, int n,
                 T* ret, int lg, int operations_per_thread)
 {
-        int id = blockDim.x * blockIdx.x + threadIdx.x;
-        int mystart = operations_per_thread * id;
-        int mystop = operations_per_thread + mystart;
-        for ( int i = mystart; i < mystop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
                 if(i < n) {
                         T mu=param1[i % n1];
                         T myx=x[i];
@@ -1013,13 +1036,12 @@ template <typename T>
 __global__ void kernel_rpois(curandState* state, int sims_per_thread,
 		T* param1,  int n1,  int n, int* ret)
 {
-	int id = blockDim.x * blockIdx.x + threadIdx.x;
-	int simstart = sims_per_thread * id;
-	int simstop = sims_per_thread + simstart;
+	int id =blockDim.x * blockIdx.x  + threadIdx.x;
 	curandState localState = state[id];
 
-
-	for (int i = simstart; i < simstop; i++) {
+	int mystop = blockDim.x * (blockIdx.x+1) * sims_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * sims_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
 		if(i<n) {
 
 			T mu= param1[i % n1];

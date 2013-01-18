@@ -1,22 +1,16 @@
 \name{indexing}
 \docType{methods}
 \alias{[-methods}
-\alias{[,gmatrix,gvector,gvector-method}
-\alias{[,gmatrix,gvector,missing-method}
-\alias{[,gmatrix,gvector,numeric-method}
-\alias{[,gmatrix,numeric,gvector-method}
-\alias{[,gmatrix,numeric,missing-method}
-\alias{[,gmatrix,numeric,numeric-method}
+\alias{[,gmatrix,index,index-method}
+\alias{[,gmatrix,index,missing-method}
+\alias{[,gmatrix,missing,index-method}
 \alias{[,gvector,ANY,ANY-method}
 
 \alias{[<--methods}
-\alias{[<-,gmatrix,gvector,gvector-method}
-\alias{[<-,gmatrix,gvector,missing-method}
-\alias{[<-,gmatrix,gvector,numeric-method}
-\alias{[<-,gmatrix,numeric,gvector-method}
-\alias{[<-,gmatrix,numeric,missing-method}
-\alias{[<-,gmatrix,numeric,numeric-method}
+\alias{[<-,gmatrix,index,index-method}
+\alias{[<-,gmatrix,index,missing-method}
 \alias{[<-,gvector,ANY,ANY-method}
+\alias{[<-,gmatrix,missing,index-method}
 
 \title{Indexing Methods}
 \description{

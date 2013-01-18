@@ -1,5 +1,5 @@
 
-
+#include <thrust/device_ptr.h>
 #include <R.h>
 #include <Rmath.h>
 #include <Rinternals.h>
@@ -16,7 +16,7 @@
 #include <cublas_v2.h>
 #include <curand_kernel.h>
 
-#include <thrust/device_ptr.h>
+
 #include <thrust/reduce.h>
 #include <thrust/functional.h>
 #include <thrust/sort.h>
@@ -360,6 +360,7 @@ extern "C" {
 
 struct gpuvec {
 	 void *d_vec;
+	 int device;
 };
 
 struct matrix {

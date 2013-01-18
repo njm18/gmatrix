@@ -203,7 +203,7 @@ setGeneric("as.gvector", useAsDefault=function(x, type=NULL, dup=TRUE) {
 			} else
 				typeno=.type_num(type)
 			
-			ret = new("gvector",length=length(x), type=fromtype)
+			ret = new("gvector",length=length(x), type=fromtype, names=names(x))
 			if(length(ret)==0L)
 				return(ret)
 			
@@ -292,7 +292,7 @@ setMethod("as.vector", "gvector",
 			checkDevice(x@device)
 			ret=.gpu_get( x@ptr, x@length, x@type)
 #			if(!gnamestrip && length(names(x))>0)
-#				names(ret)=names(x)
+#				names(ret)=names(x)		
 			return(ret)
 		})
 
@@ -355,12 +355,14 @@ setReplaceMethod("device", "gmatrix",
 			value=as.integer(value)[1]
 			if(x@device!=value) {
 				if(x@device!=curD)
-					setDevice(x@device)
+					setDevice(x@device, silent=TRUE)
 				x=h(x)
-				setDevice(value)
+				setDevice(value, silent=TRUE)
 				x=g(x)
+				if(getDevice()!=curD)
+					setDevice(curD, silent=TRUE)
 			}
-			return(ret)
+			return(x)
 		})
 
 setReplaceMethod("device", "gvector",
@@ -369,12 +371,14 @@ setReplaceMethod("device", "gvector",
 			value=as.integer(value)[1]
 			if(x@device!=value) {
 				if(x@device!=curD)
-					setDevice(x@device)
+					setDevice(x@device, silent=TRUE)
 				x=h(x)
-				setDevice(value)
+				setDevice(value, silent=TRUE)
 				x=g(x)
+				if(getDevice()!=curD)
+					setDevice(curD, silent=TRUE)
 			}
-			return(ret)
+			return(x)
 		})
 
 
@@ -412,11 +416,20 @@ setReplaceMethod("type", "gvector",
 
 setMethod("show","gvector",
 		function(object) {
-			checkDevice(object@device)
+
+			#checkDevice(object@device)
 			cat(paste("gvector of length", object@length, "and type", sQuote(type(object)),"on gpu", device(object)), ":\n",sep="")
 			#print(object@ptr)
 			if(length(object)>0) {
+				curD=getDevice()
+				flg=FALSE
+				if(object@device!=curD) {
+					setDevice(object@device, silent=TRUE)
+					flg=TRUE
+				}
 				tmp=h(object)
+				if(flg)
+					setDevice(curD, silent=TRUE)
 				if(length(object)>20)
 					cat("printing first 20 elements: \n")
 				print(tmp[1:min(20,length(object))])

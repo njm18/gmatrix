@@ -7,7 +7,7 @@ Duplicate a GPU object
 This function duplicates a \code{gmatrix} or \code{gvector} object on the specified device.
 }
 \usage{
-gdup(x, dev = device(x))
+gdup(x, dev=getDevice())
 }
 
 \arguments{

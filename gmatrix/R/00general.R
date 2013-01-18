@@ -3,15 +3,54 @@
 # Author: nmorris
 ###############################################################################
 
+setClass("gmatrix",
+		representation(
+				ptr="ANY",
+				nrow = "integer",
+				ncol = "integer",
+				rownames="ANY",
+				colnames="ANY",
+				type="integer",
+				device = "integer"),
+		prototype = list(
+				ptr=NULL,
+				nrow=NULL,
+				ncol=NULL,
+				rownames=NULL,
+				colnames=NULL,
+				type=100L,
+				device=100L)
+) 
+
+
+
+setClass("gvector",
+		representation(
+				ptr="ANY",
+				length = "integer",
+				names = "ANY",
+				type="integer",
+				device = "integer"),
+		prototype = list(
+				ptr=NULL,
+				length=NULL,
+				names=NULL,
+				type=100L,
+				device=0L)
+) 
+
+setClassUnion("index", members =  c("numeric", "logical", "character","gvector"))
+#setClassUnion("numeric_matrix", members =  c("numeric", "matrix"))
+
 .silent=FALSE
 
 .onLoad <- function(lib, pkg) {
 #	require(methods)
 	.C("initialize_globals")
-	mem=.Call("get_device_info","totalGlobalMem")
-	if(length(mem)<1)
+	computCap=.Call("get_device_info","major")+.Call("get_device_info","minor")/10
+	if(length(computCap)<1)
 		stop("No gpu devices detected.")
-	defualtdevice=which(mem==max(mem))-1
+	defualtdevice=which(computCap==max(computCap))[1]-1
 	setDevice(defualtdevice)
 }
 
@@ -39,9 +78,9 @@ listDevices = function() {
 	device[.Call("get_device")+1]="Current Device"
 	return(
 			data.frame(
-					row.names = .Call("get_device_info","name"),
+					row.names = make.names(.Call("get_device_info","name"), unique = TRUE),
 					deviceNo = 0:(tot-1),
-					globalMem=paste(round(-.Call("get_device_info","totalGlobalMem")/2^20), "Mb"),
+				#	globalMem=paste(round(-.Call("get_device_info","totalGlobalMem")/2^20), "Mb"),
 					computeCape=.Call("get_device_info","major")+.Call("get_device_info","minor")/10,
 					warpSize=.Call("get_device_info","warpSize"),
 					clockRate=paste(.Call("get_device_info","clockRate")/1000, "MHz"),
@@ -53,14 +92,23 @@ listDevices = function() {
 
 
 
-setDevice = function(device,force=FALSE,...) {
+setDevice = function(device,force=FALSE,silent=FALSE,...) {
 #	WARNING("CHANGING GPU. CONSIDER DELETEING ANY VARIABLE CREATED ON A DIFFERENT GPU.
 #					REFERENCING SUCH VARIABLES WILL HAVE UNDESIRED CONSEQUENCES.")
 #	tmp=.C("stopCublas")
 #	tmp=.C("free_dev_states")
-	tmp = .C("setDevice",as.integer(device), as.logical(.silent))
+	if(!is.numeric(device))
+		stop("device must be numeric")
+	if(length(device)!=1)
+		stop("length(device) must be 1")
+	if(!is.logical(silent))
+		stop("silent must be numeric")
+	if(length(silent)!=1)
+		stop("length(silent) must be 1")
+	
+	tmp = .C("setDevice",as.integer(device), as.logical(silent))
 #	tmp = .C("setFlagSpin")
-	tmp=.C("startCublas", as.logical(.silent))
+	tmp=.C("startCublas", as.logical(silent))
 	setTuningPameters(force=force, ...)
 }
 
@@ -269,12 +317,11 @@ h = function(x) {
 	if(class(x)=="gmatrix")
 		return(as.matrix(x))
 	if(class(x)=="gvector") {
-		ret=return(as.vector(x))
-		if(!gnamestrip && length(names(x))>0)
-			names(ret)=names(x)
+		ret=(as.vector(x))
+		#if(!gnamestrip && length(names(x))>0)
+		names(ret)=names(x)
 		return(ret)
 	}
-	
 	stop("Input to 'h' is not a gpu object.")
 }
 
@@ -282,20 +329,20 @@ h = function(x) {
 
 
 
-gdup=function(x, dev=device(x)) {
+gdup=function(x, dev=getDevice()) {
 	if(!(class(x) %in% c("gmatrix","gvector")))
 		stop("not a gpu object.")
 	if(x@device==dev) {
 		oldDevice=getDevice()
 		if(x@device!=oldDevice) {
-			setDevice(x@device)
+			setDevice(x@device, silent=TRUE)
 		}
 		#checkDevice(x@device)
 		mylength=length(x)
 		ret=x
 		ret@ptr=.Call("gpu_duplicate", x@ptr, mylength, x@type)
 		if(x@device!=oldDevice) {
-			setDevice(oldDevice)
+			setDevice(oldDevice, silent=TRUE)
 		}
 		return(ret)
 	} else {

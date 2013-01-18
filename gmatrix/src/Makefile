@@ -1,5 +1,5 @@
 #
-# GPUMatrix Makefile
+# Makefile
 # --------------
 # by Nathan Morris
 #          (Modified from the R/GPU Makefile by M. Kempenaar)
@@ -17,6 +17,13 @@
 #            d b to delet al breakpoints
 
 
+# LIB / INC locations (default, change these using 'export' in the terminal, please refer
+# to the manual on the gmatrix install instructions)
+NVCC_ARCH     ?= sm_20
+CUDA_LIB_PATH ?= /usr/local/cuda/lib64
+R_INC_PATH    ?= /usr/include/R
+
+
 # Nvidia CUDA Compiler
 NVCC = nvcc #/usr/local/cuda/bin/nvcc
 
@@ -26,7 +33,7 @@ R_CC = R CMD SHLIB
 
 # Output Files:
 #   CUDA output
-OUT_OBJ =  conversions.o general.o ops.o manipulation.o  matrix.o dist.o 
+OUT_OBJ =  dist.o conversions.o general.o ops.o manipulation.o  matrix.o
 #   R output
 OUT_SO = gmatrix.so
 
@@ -34,13 +41,9 @@ OUT_SO = gmatrix.so
 LIBS = -lcudart -lcublas 
 
 # CUDA Flags (-g -G removed)
-NVCC_FLAGS = --shared -Xcompiler "-fPIC"  -arch=sm_20 
+NVCC_FLAGS = --shared -Xcompiler "-fPIC"  -arch=${NVCC_ARCH}
 
-# LIB / INC locations (default, change these using 'export' in the terminal, please refer
-# to the manual on the gmatrix install instructions)
-#CUDA_INC_PATH ?= $(HOME)/NVIDIA_GPU_Computing_SDK/C/common/inc
-CUDA_LIB_PATH ?= /usr/local/cuda/lib64
-R_INC_PATH    ?= /usr/include/R
+
 
 # Build rules
 build: $(OUT_OBJ)

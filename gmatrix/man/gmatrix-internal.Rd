@@ -55,6 +55,9 @@
 \alias{initialize,gmatrix-method}
 \alias{initialize,gvector-method}
 
+\alias{\%op\%}
+\alias{index-class}
+
 \description{Internal skeleton objects.}
 \details{These are not to be called by the user.}
 \keyword{internal}
