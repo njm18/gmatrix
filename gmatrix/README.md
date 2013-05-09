@@ -15,7 +15,7 @@ Installation Instructions
     install.packages("gmatrix.tar.gz", repos = NULL)
     file.remove("gmatrix.tar.gz")
 	    
-4. Package compilation may take 5-10 minutes.
+Package compilation may take 5-10 minutes.
 
 Installation Note
 -----------------
