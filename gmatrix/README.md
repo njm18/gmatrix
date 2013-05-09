@@ -9,14 +9,12 @@ Installation Instructions
 -------------------------
 1. Install the the CUDA Toolkit. The current version of 'gmatix' has been tested for CUDA Toolkit 4.0 and 5.0. 
 2. Install R. The current version of 'gmatrix' has been tested under R 2.15.0.
-3. Start R and then install the 'gmatrix' package with the command:
+3. Start R and then install the 'gmatrix' package with the following commands. Package compilation may take 5-10 minutes.
 
     download.file("http://solomon.case.edu/gmatrix/gmatrix.tar.gz", "gmatrix.tar.gz")
     install.packages("gmatrix.tar.gz", repos = NULL)
     file.remove("gmatrix.tar.gz")
-	    
-Package compilation may take 5-10 minutes.
-
+	 
 Installation Note
 -----------------
 By default, when compiling, the makefile assumes that
