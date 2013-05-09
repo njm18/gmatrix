@@ -1,4 +1,4 @@
-Notes and Installation Instructions for "gmatrix"
+The "gmatrix" package
 =================================================
 
 This package implements a general framework for utilizing R to harness the power of NVIDIA GPU's. The "gmatrix" and "gvector" classes allow for easy management of the separate device and host memory spaces. Numerous numerical operations are implemented for these objects on the GPU. These operations include matrix multiplication, addition, subtraction, the kronecker product, the outer product, comparison operators, logical operators, trigonometric functions, indexing, sorting, random number generation and many more.
@@ -14,6 +14,7 @@ Installation Instructions
     download.file("http://solomon.case.edu/gmatrix/gmatrix.tar.gz", "gmatrix.tar.gz")
     install.packages("gmatrix.tar.gz", repos = NULL)
     file.remove("gmatrix.tar.gz")
+    
 4. Package compilation may take 5-10 minutes.
 
 Installation Note
@@ -23,11 +24,15 @@ By default, when compiling, the makefile assumes that
 + The R libraries are located in the folder /usr/include/R.
 + The compute capibility of the target device is 2.0.
 
-If these are incorrect assumptions, the user may set these values and install using the follwing R commands as an example:
+If these are incorrect assumptions, the user may set these values and install using the follwing R commands as an example.
+First set the environmental variables:
 
     Sys.setenv(CUDA_LIB_PATH="/usr/include/cuda-5.0/lib64")
     Sys.setenv(R_INC_PATH="/usr/local/R/R-2.15.0/lib64/R/include")
     Sys.setenv(NVCC_ARCH="-gencode arch=compute_30,code=sm_30")
+    
+Next install the package as above:
+
     download.file("http://solomon.case.edu/gmatrix/gmatrix.tar.gz", "gmatrix.tar.gz")
     install.packages("gmatrix.tar.gz", repos = NULL)
     file.remove("gmatrix.tar.gz")
