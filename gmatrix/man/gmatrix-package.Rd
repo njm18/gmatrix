@@ -18,8 +18,8 @@ random number generation and many more.
 	\tabular{ll}{
 		Package: \tab gmatrix\cr
 		Type: \tab Package\cr
-		Version: \tab 1.0\cr
-		Date: \tab 2012-10-27\cr
+		Version: \tab 0.5\cr
+		Date: \tab 2013-5-10\cr
 		License: \tab GPL-2\cr
 		LazyLoad: \tab yes\cr
 		Depends: \tab methods\cr

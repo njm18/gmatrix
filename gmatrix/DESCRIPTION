@@ -1,7 +1,7 @@
 Package: gmatrix
 Type: Package
 Title: GPU matrix and vector classes
-Version: 1.0
+Version: 0.5
 Date: 2012-01-20
 Author: Nathan Morris
 Maintainer: Nathan Morris <njm18@case.edu>

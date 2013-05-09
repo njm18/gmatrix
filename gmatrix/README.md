@@ -9,20 +9,28 @@ Installation Instructions
 -------------------------
 1. Install the the CUDA Toolkit. The current version of 'gmatix' has been tested for CUDA Toolkit 4.0 and 5.0. 
 2. Install R. The current version of 'gmatrix' has been tested under R 2.15.0.
-3. Start R and install the 'gmatrix' package with the command:
-```install.packages("gmatrix")```
+3. Start R and then install the 'gmatrix' package with the command:
+
+    download.file("http://solomon.case.edu/gmatrix/gmatrix.tar.gz", "gmatrix.tar.gz")
+    install.packages("gmatrix.tar.gz", repos = NULL)
+    file.remove("gmatrix.tar.gz")
+4. Package compilation may take 5-10 minutes.
 
 Installation Note
 -----------------
-By default the makefile assumes that
+By default, when compiling, the makefile assumes that
 + The the CUDA library files are located in the folder /usr/local/cuda/lib64.
 + The R libraries are located in the folder /usr/include/R.
++ The compute capibility of the target device is 2.0.
 
-If this is an incorrect assumption the user may set these values and install using the follwing R commands:
+If these are incorrect assumptions, the user may set these values and install using the follwing R commands as an example:
 
-    Sys.setenv(CUDA_LIB_PATH="/usr/include/cuda/lib64")
+    Sys.setenv(CUDA_LIB_PATH="/usr/include/cuda-5.0/lib64")
     Sys.setenv(R_INC_PATH="/usr/local/R/R-2.15.0/lib64/R/include")
-    install.packages("gmatrix")
+    Sys.setenv(NVCC_ARCH="-gencode arch=compute_30,code=sm_30")
+    download.file("http://solomon.case.edu/gmatrix/gmatrix.tar.gz", "gmatrix.tar.gz")
+    install.packages("gmatrix.tar.gz", repos = NULL)
+    file.remove("gmatrix.tar.gz")
 	    
 Testing the Installation
 -------------------------
