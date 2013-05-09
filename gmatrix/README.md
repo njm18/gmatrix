@@ -1,4 +1,4 @@
-The "gmatrix" package
+The "gmatrix" Package
 =================================================
 
 This package implements a general framework for utilizing R to harness the power of NVIDIA GPU's. The "gmatrix" and "gvector" classes allow for easy management of the separate device and host memory spaces. Numerous numerical operations are implemented for these objects on the GPU. These operations include matrix multiplication, addition, subtraction, the kronecker product, the outer product, comparison operators, logical operators, trigonometric functions, indexing, sorting, random number generation and many more.
@@ -14,7 +14,7 @@ Installation Instructions
     download.file("http://solomon.case.edu/gmatrix/gmatrix.tar.gz", "gmatrix.tar.gz")
     install.packages("gmatrix.tar.gz", repos = NULL)
     file.remove("gmatrix.tar.gz")
-    
+	    
 4. Package compilation may take 5-10 minutes.
 
 Installation Note
