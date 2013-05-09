@@ -145,12 +145,11 @@ setTuningPameters=function(force=TRUE, threads_per_block=as.integer(2^8),
 #	.startDevice()
 #}
 
-ggc=function() {
+ggc=function(silent=FALSE) {
 	gc(verbose =FALSE)
 	free=integer(1)
 	tot=integer(1)
-	tmp = .C("check_mem",free,tot,as.logical(.silent))
-	return(TRUE)
+	tmp = .C("check_mem",free,tot,as.logical(silent))
 }
 
 
@@ -310,7 +309,7 @@ g = function(x, type=NULL, dup=TRUE) {
 		return(as.gmatrix(x,type=type,dup=dup))
 	if(is.vector(x))
 		return(as.gvector(x,type=type,dup=dup))
-	stop("Input to 'g' is allready a gpu object, or cannot be converted to a gpu object.")
+	stop("Input to 'g()' is allready a gpu object, or cannot be converted to a gpu object.")
 }
 
 h = function(x) {

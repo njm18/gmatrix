@@ -11,9 +11,7 @@
 Get or set the type of a GPU object
 }
 \description{
-These functions may be used to get or set the type of a GPU object.
-}
-\usage{
+These functions may be used to get or set the type of a GPU object. May be used as 
 type(x)
 type(x)<-value
 }

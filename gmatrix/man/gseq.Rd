@@ -11,7 +11,6 @@ Create a sequence on the GPU.
 \usage{
 gseq(from = 1, to = 1, by = ((to - from)/(length.out - 1)),
      length.out = NULL, along.with = NULL, type = NULL)
-from \%to\% to
 }
 
 \arguments{
@@ -34,7 +33,7 @@ output type (i.e. \code{"double"}, \code{"single"}, \code{"integer"} or \code{"l
 }
 
 \value{
-returns a \code{gvector} with the specified sequence.
+returns a \code{gvector} with the specified sequence. In addition the operator \code{\%to\%} mimics the R base oporator \code{:}.
 }
 
 \author{

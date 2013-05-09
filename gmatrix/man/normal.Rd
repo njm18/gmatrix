@@ -44,7 +44,7 @@ Nathan Morris
 \code{\link{dnorm}}
 }
 \examples{
-grnorm(100) #standard normals
-grnorm(100, mean=c(1,2), sd=c(1,2,4,6))
+myRndNums1 = grnorm(100) #standard normals
+myRndNums2 = grnorm(100, mean=c(1,2), sd=c(1,2,4,6))
 }
 \keyword{Normal}

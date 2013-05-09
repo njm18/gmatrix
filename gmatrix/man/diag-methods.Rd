@@ -3,6 +3,7 @@
 \alias{diag-methods}
 \alias{diag,ANY-method}
 \alias{diag,gmatrix-method}
+\alias{diag,gvector-method}
 \alias{diag<--methods}
 \alias{diag<-,ANY-method}
 \alias{diag<-,gmatrix-method}

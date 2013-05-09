@@ -303,7 +303,7 @@ setMethod("crossprod", signature(x = "gmatrix", y = "logical"),  .cp)
 setMethod("crossprod", signature(x = "gvector", y = "gmatrix"),  .cp)
 setMethod("crossprod", signature(x = "gmatrix", y = "gvector"),  .cp)
 setMethod("crossprod", signature(x = "gvector", y = "gvector"),  .cp)
-setMethod("crossprod", signature(x = "gvector", y = "missing"),  .cp)
+setMethod("crossprod", signature(x = "gvector", y = "missing"),  function(x,y) {.cp(x,x)})
 setMethod("crossprod", signature(x = "gvector", y = "numeric"), .cp)
 setMethod("crossprod", signature(x = "numeric", y = "gvector"),  .cp)
 setMethod("crossprod", signature(x = "gvector", y = "logical"),  .cp)
@@ -542,6 +542,17 @@ setMethod("rowSums",  "gmatrix",
 		}
 )
 
+rowLogSums = function(x) {
+	
+	if(class(x)!="gmatrix")
+		stop("Object must be of class 'gmatrix.'")
+	if(x@type>1L)
+		stop("Invalid type")
+	checkDevice(x@device)
+	ret = new("gvector", ptr=.Call("gpu_rowLogSums", ptr=x@ptr, nrow(x), ncol(x), x@type),
+			length=nrow(x),type=x@type)
+	return(ret)
+}
 
 setMethod("colMeans",  "gmatrix",
 		function(x, na.rm = FALSE, dims = 1) {
@@ -1323,11 +1334,14 @@ setMethod("MOP", signature(e1 = "matrix", e2 = "gvector"),
 .exprs_sf_gc_e2e1=eval(substitute(substitute(e, list(x = bquote(e2), y=bquote(e1))), list(e = .exprs_sf_gpu_cpu_xy )))
 .exprs_sf_gc21_str =  paste( deparse(.exprs_sf_gc_e2e1),collapse="\n")
 
-
-
+setGeneric("%lgspadd%",
+		function(e1,e2)
+			standardGeneric("%lgspadd%")
+)
 
 
 .exOps=list(
+		c("lgspadd","%lgspadd%", .exprs_str, "e1@type", "big@type", .exprs_gc12_str,.exprs_gc21_str  ),
 		c("mult","*",      .exprs_str, "e1@type", "big@type", .exprs_gc12_str,.exprs_gc21_str  ),
 		c("add" ,"+",      .exprs_str, "e1@type", "big@type", .exprs_gc12_str,.exprs_gc21_str  ),
 		c("eq"  ,"==",     .exprs_compare_str, "3L", "3L", .exprs_gc12_str,    .exprs_gc21_str  ),

@@ -45,7 +45,7 @@ The algorithm for simulating from the poisson distribution was modified from the
 \code{\link{dpois}}
 }
 \examples{
-grpois(10,4)
+myRndNums = grpois(10,4)
 }
 
 \keyword{poisson }

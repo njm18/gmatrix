@@ -287,14 +287,17 @@ setMethod("as.logical", "gvector",
 #		function(x, ...)
 #			base::as.vector(x,...)
 #)
-setMethod("as.vector", "gvector",
-		function(x) {
-			checkDevice(x@device)
-			ret=.gpu_get( x@ptr, x@length, x@type)
-#			if(!gnamestrip && length(names(x))>0)
-#				names(ret)=names(x)		
-			return(ret)
-		})
+
+as.vector.gvector =  function(x, mode=NULL) {
+	checkDevice(x@device)
+	ret=.gpu_get( x@ptr, x@length, x@type)
+	if(!is.null(mode))
+		mode(ret)=mode
+	return(ret)
+}
+
+
+setMethod("as.vector", "gvector",as.vector.gvector)
 
 
 
@@ -483,17 +486,14 @@ setReplaceMethod("[", "gvector",
 		}
 )
 
+as.matrix.gvector =  function(x, ...) {
+	checkDevice(x@device)
+	ret=.gpu_get( x@ptr, x@length, x@type)
+	if(length(names(x))>0)
+		names(ret)=names(x)
 
-setMethod("as.matrix", signature(x = "gvector"), 
-		function(x) {
-			checkDevice(x@device)
-			ret=.gpu_get( x@ptr, x@length, x@type)
-			if(length(names(x))>0)
-				names(ret)=names(x)
-			return(as.matrix(ret))
-		})
+	return(as.matrix(ret))
+}
 
-#for s3 export
-as.matrix.gvector =  selectMethod("as.matrix","gvector")
-as.vector.gvector =  selectMethod("as.vector","gvector")
-t.gvector =  selectMethod("t","gvector")
+setMethod("as.matrix", signature(x = "gvector"), as.matrix.gvector 	)
+

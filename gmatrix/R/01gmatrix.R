@@ -92,15 +92,18 @@ gmatrix = function(data = NA, nrow = 1L, ncol = 1L, byrow = FALSE, dimnames = NU
 	return(ret)
 }
 
-setMethod("as.matrix", signature(x = "gmatrix"), 
-		function(x) {
-			checkDevice(x@device)
-			ret=.gpu_get( x@ptr, x@nrow * x@ncol, x@type)
-			dim(ret)=c(x@nrow , x@ncol)
-			rownames(ret)=x@rownames
-			colnames(ret)=x@colnames
-			return(ret)
-		})
+as.matrix.gmatrix =  function(x, ...) {
+	checkDevice(x@device)
+	ret=.gpu_get( x@ptr, x@nrow * x@ncol, x@type)
+	dim(ret)=c(x@nrow , x@ncol)
+	rownames(ret)=x@rownames
+	colnames(ret)=x@colnames
+
+	return(ret)
+}
+
+setMethod("as.matrix", signature(x = "gmatrix"), as.matrix.gmatrix)
+
 
 
 setGeneric("as.gmatrix", useAsDefault=gmatrix)
@@ -166,13 +169,17 @@ setMethod("as.numeric", "gmatrix",
 			return(ret)
 		})
 
-setMethod("as.vector", "gmatrix",
-		function(x) {
-			checkDevice(x@device)
-			ret=.gpu_get( x@ptr, x@nrow * x@ncol, x@type)
-			#length(ret)=length(x)
-			return(ret)
-		})
+as.vector.gmatrix =  function(x,mode=NULL) {
+	checkDevice(x@device)
+
+	ret=.gpu_get( x@ptr, x@nrow * x@ncol, x@type)
+	if(!is.null(mode))
+		mode(ret)=mode
+	return(ret)
+}
+
+
+setMethod("as.vector", "gmatrix", as.vector.gmatrix)
 
 setMethod("as.integer", "gmatrix",
 		function(x) {
@@ -327,6 +334,23 @@ setMethod("diag", "gmatrix",
 			)
 		}
 )
+setMethod("diag", "gvector", 
+		function(x) {
+			checkDevice(x@device)
+			#gpu_diag_get(SEXP A_in, SEXP n_row_in, SEXP n_col_in)
+			ret = gmatrix(0, length(x), length(x), type=x@type)
+			diag(ret)=x
+			return(ret)
+		}
+)
+
+gident = function(n,val=1, type="d") {
+	n=as.integer(n)[1]
+	ret = gmatrix(0, n, n, type=type)
+	diag(ret)=val
+	return(ret)
+}
+
 setReplaceMethod("diag", "gmatrix", 
 		function(x, value) {
 			checkDevice(x@device)
@@ -574,6 +598,4 @@ setReplaceMethod("[", c("gmatrix","missing","index"), .setcolindex)
 
 
 
-as.matrix.gmatrix =  selectMethod("as.matrix","gmatrix")
-as.vector.gmatrix =  selectMethod("as.vector","gmatrix")
-t.gmatrix =  selectMethod("t","gmatrix")
+

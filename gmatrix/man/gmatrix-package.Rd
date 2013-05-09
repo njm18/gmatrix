@@ -41,7 +41,7 @@ None
 \keyword{GPU}
 
 \seealso{
-\code{\link[rcula:rcula-package]{rcula}}, \code{\link{g}}, \code{\link{h}}, \code{\link{gmatrix-class}}, \code{\link{gvector-class}}
+\code{rcula-package}, \code{\link{g}}, \code{\link{h}}, \code{\link{gmatrix-class}}, \code{\link{gvector-class}}
 }
 \examples{
 #Look at available GPU devices (use setDevice to change the device)

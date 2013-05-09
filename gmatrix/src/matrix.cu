@@ -1143,7 +1143,59 @@ SEXP gpu_if(SEXP H_in, SEXP A_in, SEXP B_in,SEXP snh, SEXP sna, SEXP snb, SEXP i
 	return ret_final;
 }
 
+//rowLogSums
+template <typename T>
+__global__ void kernal_rowLogSums(T* P, T* ret, int rows, int cols, int operations_per_thread)
+{
+	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
+	int j;
+	T M, s;
+	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
+		if (i < rows) {
+			M=log(0.0);
+			for(j=0;j<cols;j++) {
+				if(P[j*rows+i]>M)
+					M=P[j*rows+i];
+			}
 
+			//calculate the cumulative sum without overflow
+			s=exp(P[i]-M);
+			for(j=1;j<cols;j++) {
+				s=s + exp(P[j*rows+i]-M);
+			}
+			ret[i]=log(s)+M;
+		}
+	}
+
+}
+SEXP gpu_rowLogSums(SEXP in_P, SEXP in_rows, SEXP in_cols, SEXP in_type)
+{
+
+	struct gpuvec *ret = Calloc(1, struct gpuvec);
+	struct gpuvec *P = (struct gpuvec*) R_ExternalPtrAddr(in_P);
+	int rows = INTEGER(in_rows)[0];
+	int cols = INTEGER(in_cols)[0];
+
+	DECERROR1;
+	//allocate
+	PROCESS_TYPE;
+	CUDA_MALLOC(ret->d_vec,rows * mysizeof) ;
+
+	GET_BLOCKS_PER_GRID(rows);
+
+	//kernal_mat_times_diag_vec(double* x, double* y, double* ret, int n_row_x, int n, int operations_per_thread)
+	#define KERNAL(PTR,T)\
+	kernal_rowLogSums< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(P),PTR(ret),\
+			rows, cols, operations_per_thread);
+	CALL_KERNAL_SF;
+	#undef KERNAL
+
+	CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec) ;
+
+    SEXP ret_final = gpu_register(ret);
+    return ret_final;
+}
 
 /*
 SEXP gpu_max_pos(SEXP A_in, SEXP n_in)

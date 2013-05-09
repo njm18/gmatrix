@@ -18,6 +18,9 @@
 \alias{crossprod,matrix,gmatrix-method}
 \alias{crossprod,numeric,gmatrix-method}
 \alias{crossprod,numeric,gvector-method}
+\alias{crossprod,gvector,matrix-method}
+\alias{crossprod,matrix,gvector-method}
+
 \alias{tcrossprod-methods}
 \alias{tcrossprod,ANY,ANY-method}
 \alias{tcrossprod,gmatrix,gmatrix-method}
@@ -36,6 +39,8 @@
 \alias{tcrossprod,matrix,gmatrix-method}
 \alias{tcrossprod,numeric,gmatrix-method}
 \alias{tcrossprod,numeric,gvector-method}
+\alias{tcrossprod,gvector,matrix-method}
+\alias{tcrossprod,matrix,gvector-method}
 \title{Matrix Crossproduct}
 \description{
  Given matrices x and y as arguments, return a matrix cross-product. This is formally equivalent to (but usually slightly faster than) the call \code{t(x) \%*\% y} (crossprod) or \code{x \%*\% t(y)} (tcrossprod). 

@@ -553,6 +553,11 @@ gtest =function() {
 			warningslist<-c(warningslist,paste("Error in transpose type:",i-1))
 	}
 	
+	cat("Checking logRowSums... \n")
+	tmp=cbind(rep(7,10000),1,1,1)
+	gtmp=g(log(tmp))
+	if(any( abs(h(rowLogSums(gtmp))-log(10))>10^-9))
+		warningslist<-c(warningslist, "Error in 'rowLogSums.'")
 	
 	cat("Checking indexing and diag functions... \n")
 	for(i in 1:4) {
@@ -733,7 +738,12 @@ gtest =function() {
 								rdistfun=function(n) grpois(n,lamb),max1=.999999
 						)
 					}), "grpois")
-	
+	#todo: check rsample
+	# tmp=cbind(rep(7,10000),1,1,1)
+	# gtmp=g(log(tmp))
+	# rowLogSums(gtmp)
+	# table(h(rsample(gtmp)))
+
 	cat("Checking distribution functions...\n")
 	#Distribution Checks
 	checkd=function(a,b,distfun) {

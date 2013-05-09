@@ -16,11 +16,7 @@
 The \code{as.gmatrix} and \code{as.gvector} methods may be used to coerce an object to a given GPU class (i.e. \code{gmatrix} or \code{gvector}).
 }
 %as.gmatrix(data, type=NULL, dup=TRUE)
-\usage{
-as.gmatrix(data = NA, nrow = 1L, ncol = 1L, byrow = FALSE,
-    dimnames = NULL, type = NULL, dup = TRUE)
-as.gvector(x, type=NULL, dup=TRUE)
-}
+
 \arguments{
   \item{x, data}{object to be coerced}
   \item{type}{The type to convert the object to. There are three different ways to specify this. One may use the \code{"double"}, \code{"single"}, \code{"integer"} or \code{"logical"} notation. Alternatively the short form \code{"d"}, \code{"s"}, \code{"i"} or \code{"s"} notation may be used. Finally the internal integer representation of 0L, 1L, 2L or 3L may be used.}
@@ -31,7 +27,13 @@ as.gvector(x, type=NULL, dup=TRUE)
 
 \details{
 The \code{as.gmatrix} and \code{as.gvector} methods may be used to move an R object to the current GPU device and returns an object of class
-\code{gmatrix} or \code{gvector} respectively. The \code{dup} argument is used only when the input argument (\code{data}) is all ready on the GPU. 
+\code{gmatrix} or \code{gvector} respectively. The methods have the following arguments:
+
+as.gmatrix(data = NA, nrow = 1L, ncol = 1L, byrow = FALSE,
+    dimnames = NULL, type = NULL, dup = TRUE)
+as.gvector(x, type=NULL, dup=TRUE)
+
+The \code{dup} argument is used only when the input argument (\code{data}) is all ready on the GPU. 
 \code{dup=FALSE} will return the original data without duplicating it on the GPU.
 }
 

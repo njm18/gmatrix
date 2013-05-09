@@ -1057,6 +1057,7 @@ __global__ void kernel_rpois(curandState* state, int sims_per_thread,
 
 
 
+
 SEXP gpu_rpois(SEXP in_n, SEXP in_parm1,  SEXP in_n_parm1, SEXP in_type)
 {
 
@@ -1079,6 +1080,75 @@ SEXP gpu_rpois(SEXP in_n, SEXP in_parm1,  SEXP in_n_parm1, SEXP in_type)
 	#define KERNAL(PTR,T)\
 	kernel_rpois< T><<<blocksPerGrid, (threads_per_block[currentDevice])>>>((dev_states[currentDevice]), simulations_per_thread,\
 			PTR(parm1), n_parm1, n, (int *) ret->d_vec);
+	CALL_KERNAL_SF;
+	#undef KERNAL
+	CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);
+	SEXP ret_final = gpu_register(ret);
+	return ret_final;
+
+}
+
+
+/**********************************
+ *   Row Samples
+ **********************************/
+
+template <typename T>
+__global__ void kernel_rsample(curandState* state, int sims_per_thread,
+		T* P, T* norm, int rows,  int cols, int* ret)
+{
+	int id = blockDim.x * blockIdx.x  + threadIdx.x;
+	curandState localState = state[id];
+
+	T u,s, normi; int j;
+
+	int mystop = blockDim.x * (blockIdx.x+1) * sims_per_thread;
+	for ( int i = blockDim.x * blockIdx.x * sims_per_thread  + threadIdx.x;
+			i < mystop; i+=blockDim.x) {
+		if(i<rows) {
+			//Sample
+			normi=norm[i];
+			u = UNI;
+			s=0;
+			for(j=0;j<cols;j++) {
+				s=s + exp(P[j*rows+i]-normi);
+				if( u < s )
+					break;
+			}
+			ret[i]=j+1L;
+		}
+		__syncthreads();
+	}
+	/* Copy state back to global memory */
+	state[id] = localState;
+}
+
+
+
+SEXP gpu_rsample(SEXP in_P, SEXP in_rows, SEXP in_cols, SEXP in_norm, SEXP in_type)
+{
+
+	struct gpuvec *ret = Calloc(1, struct gpuvec);
+	struct gpuvec *P = (struct gpuvec*) R_ExternalPtrAddr(in_P);
+	struct gpuvec *norm = (struct gpuvec*) R_ExternalPtrAddr(in_norm);
+	int rows = INTEGER(in_rows)[0];
+	int cols = INTEGER(in_cols)[0];
+
+
+	DECERROR1;
+	//allocate
+	PROCESS_TYPE_NO_SIZE;
+	CUDA_MALLOC(ret->d_vec,rows *sizeof(int));
+
+	int n=rows;//number of values to be simulated
+	SETUP_RAND;
+#ifdef DEBUG
+	Rprintf("simulations_per_thread=%d, blocksPerGrid=%d, n=%d, n_parm1=%d, n_parm2=%d",
+			simulations_per_thread,blocksPerGrid,n,n_parm1,n_parm2);
+#endif
+	#define KERNAL(PTR,T)\
+		kernel_rsample< T><<<blocksPerGrid, (threads_per_block[currentDevice])>>>((dev_states[currentDevice]), simulations_per_thread,\
+			PTR(P), PTR(norm), rows, cols, (int *) ret->d_vec);
 	CALL_KERNAL_SF;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);

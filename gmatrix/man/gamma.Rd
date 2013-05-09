@@ -38,7 +38,7 @@ Nathan Morris
  \code{\link{dgamma}}
 }
 \examples{
-grgamma(10, c(1,2))
+myRndNums = grgamma(10, c(1,2))
 }
 
 \keyword{gamma}

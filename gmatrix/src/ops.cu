@@ -540,6 +540,25 @@ BINARYOP(mult, y[i] *  x[i], y[i] *  x[j], y[i] *  c);
 BINARYOP(add,  y[i] +  x[i], y[i] +  x[j], y[i] +  c);
 
 
+//double logspace_add (double logx, double logy)
+//{
+//    return fmax2 (logx, logy) + log1p (exp (-fabs (logx - logy)));
+//}
+template <typename T>
+__device__ T logspaceadd(T logx, T logy) {
+	T M = ( ((logx) > (logy)) ? (logx) : (logy) );
+	return M + log1p(exp(-fabs(logx-logy)));
+}
+template <>
+__device__ int logspaceadd<int>(int logx, int logy){
+	int M = ( ((logx) > (logy)) ? (logx) : (logy) );
+	int D = (double)(logx-logy);
+	return M + (int)log1p(exp(-fabs((double)D))) ;
+}
+
+BINARYOP(lgspadd, logspaceadd(y[i], x[i]), logspaceadd(y[i], x[j]), logspaceadd(y[i], c));
+
+
 BINARYOP_COMPARE(eq,   y[i] == x[i], y[i] == x[j], y[i] == c);
 BINARYOP_COMPARE(ne,   y[i] != x[i], y[i] != x[j], y[i] != c);
 

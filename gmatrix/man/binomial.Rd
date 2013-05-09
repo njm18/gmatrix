@@ -36,7 +36,7 @@ The algorythm for simulating from the poisson distribution was modified from the
 \code{\link{dbinom}}
 }
 \examples{
-grbinom(10,10,.6)
+myRndNums = grbinom(10,10,.6)
 }
 \keyword{binomial}
 

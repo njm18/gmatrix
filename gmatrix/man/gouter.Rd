@@ -16,14 +16,13 @@ This function calculates the outer product of two gvectors.
 }
 \usage{
 gouter(x, y, FUN = "*", normalOrder = TRUE)
-X \%o\% Y
 }
 
 \arguments{
-  \item{x,X}{
+  \item{x}{
 	a 'vector' or \code{gvector} object
 }
-  \item{y,Y}{
+  \item{y}{
 	a 'vector' or \code{gvector} object
 }
   \item{FUN}{
@@ -34,7 +33,7 @@ X \%o\% Y
 }
 }
 \details{
-This function is similar to the \code{\link{outer}} function in R base. It performs the specified operation on all posible combinations of elements from the first vector with the second. This function does not behave the same as R base when operating on matrices.
+This function is similar to the \code{\link{outer}} function in R base. It performs the specified operation on all posible combinations of elements from the first vector with the second. This function does not behave the same as R base when operating on matrices. Also, the operator \%o\% may be used as in the R base package.
 }
 \value{
 returns a \code{gmatrix} with the specified operation performed

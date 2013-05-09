@@ -35,7 +35,7 @@ Random number generation implemented with the cuRAND library.
 \code{\link{runif}}
 }
 \examples{
-grunif(10)
+myRndNums = grunif(10)
 
 }
 \keyword{ uniform }

@@ -7,11 +7,14 @@ GPU Garbage Collection
 Performs Garbage Collection and reports the available memory.
 }
 \usage{
-ggc()
+ggc(silent=FALSE)
 }
+\arguments{
+  \item{silent}{If silent is TRUE then nothing will be printed out.}
+ }
 
 \details{
-Mostly used to discover the amount of memory on the graphics card which is still available.
+Used for garbage collection, and also used to discover the amount of memory on the graphics card which is still available.
 }
 \value{
 returns TRUE, but prints the amount of memory left.

@@ -35,7 +35,7 @@ Nathan Morris
 \code{\link{dbeta}}
 }
 \examples{
-grbeta(10,c(1,2), c(1,2,3,4,5))
+myRndNums = grbeta(10,c(1,2), c(1,2,3,4,5))
 }
 
 \keyword{beta}

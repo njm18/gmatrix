@@ -19,7 +19,6 @@
 
 # LIB / INC locations (default, change these using 'export' in the terminal, please refer
 # to the manual on the gmatrix install instructions)
-NVCC_ARCH     ?= sm_20
 CUDA_LIB_PATH ?= /usr/local/cuda/lib64
 R_INC_PATH    ?= /usr/include/R
 
@@ -40,8 +39,10 @@ OUT_SO = gmatrix.so
 # CUDA Libraries -d
 LIBS = -lcudart -lcublas 
 
-# CUDA Flags (-g -G removed)
-NVCC_FLAGS = --shared -Xcompiler "-fPIC"  -arch=${NVCC_ARCH}
+# CUDA Flags (-g -G removed) 
+#NVCC_ARCH  =  '-gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35
+NVCC_ARCH  =  -gencode arch=compute_20,code=sm_20
+NVCC_FLAGS = --shared -Xcompiler "-fPIC" ${NVCC_ARCH} -O2
 
 
 

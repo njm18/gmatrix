@@ -383,4 +383,16 @@ gdpois=function(x, lambda, log = FALSE, type="d") {
 	new("gvector",ptr=.Call("gpu_dpois", n, x@ptr, lambda@ptr,lambda@length, log, typeno),length=n, type=typeno)
 }
 
+###########################
+#         rsample
+###########################
+rsample = function(P, log=TRUE) {
+	if(class(P)!="gmatrix")
+		stop("Object must be of class 'gmatrix.'")
+	if(!log)
+		P=log(P)
+	#SEXP gpu_rsample(SEXP in_P, SEXP in_rows, SEXP in_cols, SEXP in_norm, SEXP in_type);
+	norm = rowLogSums(P)
+	return(new("gvector", ptr=.Call("gpu_rsample",P@ptr, nrow(P), ncol(P),norm@ptr, P@type), length=nrow(P), type=2L))
+}
 

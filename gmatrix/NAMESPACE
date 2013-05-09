@@ -4,7 +4,7 @@ exportPattern("^[^\\.]")
 
 
 exportClasses("gmatrix", "gvector")
-
+importFrom("methods",getMethod)
 
 exportMethods(
     "^",
@@ -68,8 +68,7 @@ exportMethods(
 	'is.na',
 	'is.nan',
 	'is.finite',
-	'is.infinite',
-	'type')
+	'is.infinite')
 
 
 
@@ -77,8 +76,7 @@ exportMethods(
 ## So that such dispatch also works inside base functions:
 S3method(as.matrix, gmatrix)
 S3method(as.vector, gmatrix)
-S3method(t, gmatrix)
+
 
 S3method(as.matrix, gvector)
 S3method(as.vector, gvector)
-S3method(t, gvector)
