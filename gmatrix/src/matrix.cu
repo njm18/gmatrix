@@ -531,6 +531,8 @@ SEXP matrix_multiply(SEXP A_in, SEXP B_in, SEXP transa, SEXP transb, SEXP in_typ
     	error("cublas error from 'matrix_multiply.' (%s)'\n", getCublasErrorString(cublasStatus));
     }
 
+	CUDA_CHECK_KERNAL_CLEAN_1(ret.d_vec) ;
+
     struct gpuvec *my_gpuvec = Calloc(1, struct gpuvec);
     my_gpuvec->d_vec= ret.d_vec;
     PROTECT(gpu_ptr = gpu_register(my_gpuvec));

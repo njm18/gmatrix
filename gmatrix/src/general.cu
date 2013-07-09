@@ -351,7 +351,12 @@ SEXP  get_device_info(SEXP property)
 	int deviceCount = 0;
 	int i;
 	cudaDeviceProp deviceProp;
-	cudaGetDeviceCount(&deviceCount);
+	cudaError_t error_id = cudaGetDeviceCount(&deviceCount);
+	if (error_id != cudaSuccess)
+    {
+        error("cudaGetDeviceCount returned %d\n-> %s\n", (int)error_id, cudaGetErrorString(error_id));
+    }
+
 	SEXP ret;
 
 
