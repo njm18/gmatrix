@@ -1,6 +1,6 @@
 Package: gmatrix
 Type: Package
-Title: GPU matrix and vector classes
+Title: An R Package for Harnessing GPU Power
 Version: 0.1
 Date: 2012-01-20
 Author: Nathan Morris

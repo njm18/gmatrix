@@ -50,8 +50,18 @@ setClassUnion("index", members =  c("numeric", "logical", "character","gvector")
 	computCap=.Call("get_device_info","major")+.Call("get_device_info","minor")/10
 	if(length(computCap)<1)
 		stop("No gpu devices detected.")
-	defualtdevice=which(computCap==max(computCap))[1]-1
-	setDevice(defualtdevice)
+	#defualtdevice=which(computCap==max(computCap))[1]-1
+	deviceOrder = order(computCap)-1 
+	for(defualtdevice in  deviceOrder) {
+		tmp = tryCatch(setDevice(defualtdevice), error = function(e) return(e))
+		if("error" %in% class(tmp)) {
+			packageStartupMessage("Unable to use device ", defualtdevice, ".\n")
+			if(defualtdevice==max(deviceOrder))
+				stop("No devices could be accesed.")
+		} else {
+			break
+		}
+	}
 }
 
 .onUnload <- function(libname) {

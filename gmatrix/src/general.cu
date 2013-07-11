@@ -161,14 +161,14 @@ SEXP setup_curand(SEXP in_total_states, SEXP in_seed, SEXP in_silent, SEXP in_fo
 		/* Allocate space for prng states on device */
 		cudaStat = cudaMalloc (( void **)&(dev_states[currentDevice]), (total_states[currentDevice])*sizeof(curandState));
 		if (cudaStat != cudaSuccess ) {
-			error("Kernal error from 'gpu_add_scaler.' (%d)'\n", (int) cudaStat);
+			error("Allocation error from 'setup_curand.' (%d)'\n", (int) cudaStat);
 		}
 		/* Setup prng states */
 		int blocksPerGrid = ((total_states[currentDevice]) + (threads_per_block[currentDevice]) - 1) / (threads_per_block[currentDevice]);
 		kernel_setup_curand<<<blocksPerGrid, (threads_per_block[currentDevice])>>>((dev_states[currentDevice]), seed, (total_states[currentDevice]));
 		cudaStat = cudaDeviceSynchronize();
 		if (cudaStat != cudaSuccess ) {
-			error("Kernal error from 'gpu_add_scaler.' (%d)'\n", (int) cudaStat);
+			error("Kernal error from 'setup_curand.' (%d)'\n", (int) cudaStat);
 		}
 
 		dev_state_set[currentDevice]=1;
@@ -184,7 +184,7 @@ void startCublas(int* silent) { // must be called with .C interface
 			Rprintf("Starting cublas on device %d.\n", currentDevice);
 		status1 = cublasCreate(&(handle[currentDevice]));
 		if (status1 != CUBLAS_STATUS_SUCCESS) {
-			warning("CUBLAS initialization error\n");
+			error("CUBLAS initialization error\n");
 		}
 		dev_cublas_set[currentDevice]=1;
 	}
