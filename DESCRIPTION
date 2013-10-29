@@ -7,4 +7,6 @@ Author: Nathan Morris
 Maintainer: Nathan Morris <njm18@case.edu>
 Description: This package implements a general framework for utilizing R to harness the power of NVIDIA GPU's. The "gmatrix" and "gvector" classes allow for easy management of the separate device and host memory spaces. Numerous numerical operations are implemented for these objects on the GPU. These operations include matrix multiplication, addition, subtraction, the kronecker product, the outer product, comparison operators, logical operators, trigonometric functions, indexing, sorting, random number generation and many more.
 License: GPL-2
+SystemRequirements: Nvidia's CUDA toolkit (>= release 4.0) and Nvidia GPU with compute capibility >=2.0
+URL: https://github.com/njm18/gmatrix
 Depends: methods
