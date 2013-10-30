@@ -422,7 +422,7 @@ gouter<-function(x,y,FUN="*", normalOrder=TRUE ){
 			y=as.gvector(y)
 	if(class(x)!="gvector" && class(y)!="gvector")
 		stop("Expected input types of 'gvector' or 'vector'.")
-	eval(gmatrix:::.exprs_sf_xy)
+	eval(.exprs_sf_xy)
 	checkDevice(c(x@device,y@device))
 	if(class(x)!="gvector")
 		x=as.gvector(x)

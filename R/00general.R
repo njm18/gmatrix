@@ -55,7 +55,7 @@ setClassUnion("index", members =  c("numeric", "logical", "character","gvector")
 	for(defualtdevice in  deviceOrder) {
 		tmp = tryCatch(setDevice(defualtdevice), error = function(e) return(e))
 		if("error" %in% class(tmp)) {
-			packageStartupMessage("Unable to use device ", defualtdevice, ".\n")
+			warning("Unable to use device ", defualtdevice, ".\n")
 			if(defualtdevice==max(deviceOrder))
 				stop("No devices could be accesed.")
 		} else {
