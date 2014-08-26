@@ -316,6 +316,222 @@ SEXP gpu_rep_m(SEXP in_A,SEXP in_n, SEXP in_N, SEXP in_times_each, SEXP in_type)
 		else \
 			CUBLAS(MMPTR_FLOAT, S)\
 
+/* this function allows matrix multiplication with C allready allocated */
+SEXP gpu_gmm(SEXP A_in, SEXP B_in, SEXP C_in, SEXP transa, SEXP transb, SEXP in_type)
+{
+  SEXP ret_final;
+	struct matrix ret = get_matrix_struct(C_in);
+	struct matrix A = get_matrix_struct(A_in);
+	struct matrix B = get_matrix_struct(B_in);
+	int colsOpA=0, rowsOpB=0;
+  int retRows, retCols;
+	int TA = LOGICAL_VALUE(transa), TB = LOGICAL_VALUE(transb);
+	cublasOperation_t TRANSA , TRANSB ;
+	const int stride = 1;
+	const double alphaD = 1.0;
+	const double betaD = 0.0;
+	const float alphaS = 1.0;
+	const float betaS = 0.0;
+
+	DECERROR1;
+	cublasStatus_t cublasStatus;
+	SEXP rownames,colnames, gpu_ptr;
+	int type = INTEGER(in_type)[0];\
+	if(type>2)
+		error("Type must be 'double' or 'float.'");
+
+	if(TA==0) {
+		retRows=A.rows;
+		colsOpA=A.cols;
+		PROTECT(rownames= GET_SLOT(A_in, install("rownames")));
+		TRANSA=CUBLAS_OP_N;
+	}
+	else {
+		retRows=A.cols;
+		colsOpA=A.rows;
+		PROTECT(rownames= GET_SLOT(A_in, install("colnames")));
+		TRANSA = CUBLAS_OP_T;
+	}
+
+	if(TB==0) {
+		retCols=B.cols;
+		rowsOpB=B.rows;
+		PROTECT(colnames= GET_SLOT(B_in, install("colnames")));
+		TRANSB = CUBLAS_OP_N;}
+	else {
+		retCols=B.rows;
+		rowsOpB=B.cols;
+		PROTECT(colnames= GET_SLOT(B_in, install("rownames")));
+		TRANSB = CUBLAS_OP_T;}
+
+	if(rowsOpB!= colsOpA) {
+		error("Matrix dimensions do not match for matrix multiplication.\n");
+	}
+  if(retCols!=ret.cols || retRows!=ret.rows) {
+  	error("Dimension of the return matrix (C) do not match the output of the matrix multiplication.\n");
+	}
+
+	//ret.ld=retRows;
+
+
+
+
+	if(ret.rows==1) {
+		if(ret.cols==1) {
+		//	blasStatus_t cublasDdot (cublasHandle_t (handle[currentDevice]), int n,
+		//			const double *x, int incx,
+		//			const double *y, int incy,
+		//			double *result)
+		//	REprintf("colsOpA=%d , stride=%d \n",colsOpA,stride );
+
+			//had to jerry-rig this a bit -- everything seemed to break if i changed the mode when the package loads
+			cublasStatus = cublasSetPointerMode((handle[currentDevice]), CUBLAS_POINTER_MODE_DEVICE);
+			if (cublasStatus != CUBLAS_STATUS_SUCCESS) {
+				cudaError_t status1=cudaFree(ret.d_vec);
+		    	if (status1 != cudaSuccess ) {
+		    		error("CUBLAS pointer mode could not be set and CUDA memory and free errors in 'gpu_gmm'\n");
+		    	}
+				error("CUBLAS pointer mode could not be set\n");
+			}
+			#define CUBLAS(PTR,MT) \
+			cublasStatus= cublas##MT##dot((handle[currentDevice]), colsOpA,\
+					PTR(A),1,\
+					PTR(B),1,\
+					PTR(ret));
+			CALL_CUBLAS;
+			#undef CUBLAS
+
+			cublasStatus = cublasSetPointerMode((handle[currentDevice]), CUBLAS_POINTER_MODE_HOST);
+			if (cublasStatus != CUBLAS_STATUS_SUCCESS) {
+				cudaError_t status1=cudaFree(ret.d_vec);
+		    	if (status1 != cudaSuccess ) {
+		    		error("CUBLAS pointer mode could not be reset and CUDA memory and free errors in 'gpu_gmm'\n");
+		    	}
+				error("CUBLAS pointer mode could not be set\n");
+			}
+
+
+		} else {
+			if(TRANSB == CUBLAS_OP_T)
+				TRANSB=CUBLAS_OP_N;
+			else
+				TRANSB=CUBLAS_OP_T;
+
+			#define CUBLAS(PTR,MT) \
+			cublasStatus=cublas##MT##gemv(\
+					(handle[currentDevice]),\
+					TRANSB, \
+					B.rows,\
+					B.cols,\
+					&alpha##MT ,\
+					PTR(B),B.ld,\
+					PTR(A),stride,\
+					&beta##MT ,\
+					PTR(ret),stride);
+			CALL_CUBLAS;
+			#undef CUBLAS
+
+		}
+	} else {
+		if(ret.cols==1) {
+			//			cublasDgemv(cublasHandle_t (handle[currentDevice]), cublasOperation_t trans,
+			//			int m, int n,
+			//			const double *alpha,
+			//			const double *A, int lda,
+			//			const double *x, int incx,
+			//			const double *beta,
+			//			double *y, int incy)
+			#define CUBLAS(PTR,MT) \
+			cublasStatus=cublas##MT##gemv((handle[currentDevice]),\
+					TRANSA, \
+					A.rows,\
+					A.cols,\
+					&alpha##MT ,\
+					PTR(A),A.ld,\
+					PTR(B),stride,\
+					&beta##MT ,\
+					PTR(ret),stride);
+			CALL_CUBLAS;
+			#undef CUBLAS
+
+		} else {
+			if(colsOpA==1) {
+				//kernal_init_double(double* y, int ny, double setval, int operations_per_thread)
+				int myn=ret.rows*ret.cols;
+				GET_BLOCKS_PER_GRID(myn);
+				struct matrix *retptr =&ret;
+				//#define val_double 0.0;
+				//#define val_float 0.0;
+				//#define val_int 0;
+				#define KERNAL(PTR,T)\
+				 	 kernal_init_double< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(retptr), myn, 0.0 , operations_per_thread);
+				CALL_KERNAL_SF;
+				#undef KERNAL
+
+				CUDA_CHECK_KERNAL_CLEAN_1(ret.d_vec);
+
+
+		//		cublasStatus_t cublasDger (cublasHandle_t (handle[currentDevice]), int m, int n,
+		//		  const double *alpha,
+		//		  const double *x, int incx,
+		//		  const double *y, int incy,
+		//		  double *A, int lda)
+				#define CUBLAS(PTR,MT) \
+				cublasStatus=cublas##MT##ger( (handle[currentDevice]),ret.rows, ret.cols,\
+						&alpha##MT ,\
+						PTR(A), stride,\
+						PTR(B), stride,\
+						PTR(ret), ret.ld);
+				CALL_CUBLAS;
+				#undef CUBLAS
+
+			} else { // finally the general Dgemm
+				/*cublasStatus=cublasDgemm((handle[currentDevice]),\
+						TRANSA, //transpose\
+						TRANSB, //transpose\
+						ret.rows,  //rows of matrix op(A)\
+						ret.cols,  //cols of matrix op(B)\
+						colsOpA,  //cols of matrix op(A)\
+						&alpha,\
+						PTR(A), A.ld,\
+						PTR(B), B.ld,\
+						&beta,\
+						PTR(ret), ret.ld);*/
+				#define CUBLAS(PTR,MT) \
+				cublasStatus=cublas##MT##gemm((handle[currentDevice]),\
+						TRANSA, \
+						TRANSB, \
+						ret.rows,  \
+						ret.cols, \
+						colsOpA,  \
+						&alpha##MT ,\
+						PTR(A), A.ld,\
+						PTR(B), B.ld,\
+						&beta##MT ,\
+						PTR(ret), ret.ld);
+				CALL_CUBLAS;
+				#undef CUBLAS
+			}
+		}
+	}
+
+
+    if (cublasStatus != CUBLAS_STATUS_SUCCESS ) {
+    	cudaError_t status1=cudaFree(ret.d_vec);
+    	if (status1 != cudaSuccess ) {
+    		error("cublas error from 'gpu_gmm.' (%s)'\n Also memory free error (potential memory leak).", getCublasErrorString(cublasStatus));
+    	}
+    	error("cublas error from 'gpu_gmm.' (%s)'\n", getCublasErrorString(cublasStatus));
+    }
+
+	CUDA_CHECK_KERNAL_CLEAN_1(ret.d_vec) ;
+
+    UNPROTECT(2L);
+
+
+    return C_in;
+}
+
 
 SEXP matrix_multiply(SEXP A_in, SEXP B_in, SEXP transa, SEXP transb, SEXP in_type)
 {

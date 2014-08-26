@@ -217,6 +217,31 @@ setMethod("%*%", signature(x = "matrix", y= "gvector"),
 				x=as.gmatrix(x)
 			return(x%*%y)
 		})
+
+##############################################
+#       GMM function to avoid the allocating C
+##############################################
+gmm = function(A, B, C, trA=FALSE, trB=FALSE) {
+  if(class(A)=="gvector")
+    A=gmatrix(A,nrow=1,dup=FALSE)
+  else if(class(A)!="gmatrix")
+    stop("A must be of class 'gmatrix' or 'gvector.'")
+  if(class(B)=="gvector")
+    B=gmatrix(B,ncol=1,dup=FALSE)
+  else if(class(B)!="gmatrix")
+    stop("B must be of class 'gmatrix' or 'gvector.'")
+  if(class(C)=="gvector")
+    C=gmatrix(C,ncol=1,dup=FALSE)
+  else if(class(C)!="gmatrix")
+    stop("C must be of class 'gmatrix' or 'gvector.'")
+  
+  if(A@type!=B@type || B@type !=C@type)
+    stop("A, B and C must all have the same type.")
+  # SEXP gpu_gmm(SEXP A_in, SEXP B_in, SEXP C_in, SEXP transa, SEXP transb, SEXP in_type)
+  invisible(.Call("gpu_gmm", A, B, C, trA, trB, A@type))
+}
+
+
 ##############################################
 #              Cross Product
 ##############################################

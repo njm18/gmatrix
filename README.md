@@ -12,9 +12,7 @@ Installation Instructions
 3. Start R and then install the 'gmatrix' package with the following commands. Package compilation may take 5-10 minutes.
 
 ```
-download.file("http://solomon.case.edu/gmatrix/gmatrix_0.1.tar.gz", "gmatrix.tar.gz")
-install.packages("gmatrix.tar.gz", repos = NULL)
-file.remove("gmatrix.tar.gz")
+install.packages("gmatrix.tar.gz")
 ```
 	 
 Installation Note
@@ -33,9 +31,9 @@ First set the environmental variables:
     
 Next install the package as above:
 
-    download.file("http://solomon.case.edu/gmatrix/gmatrix_0.1.tar.gz", "gmatrix.tar.gz")
-    install.packages("gmatrix.tar.gz", repos = NULL)
-    file.remove("gmatrix.tar.gz")
+```
+install.packages("gmatrix.tar.gz")
+```
 	    
 Testing the Installation
 -------------------------

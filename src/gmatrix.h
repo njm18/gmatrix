@@ -443,6 +443,7 @@ SEXP gpu_rowLogSums(SEXP in_P, SEXP in_rows, SEXP in_cols, SEXP in_type);
 
 //matrix multiplications
 SEXP matrix_multiply(SEXP A_in, SEXP B_in, SEXP transa, SEXP transb, SEXP in_type);//ordinary matrix multiplication
+SEXP gpu_gmm(SEXP A_in, SEXP B_in, SEXP C_in, SEXP transa, SEXP transb, SEXP in_type);
 SEXP gpu_outer(SEXP A_in, SEXP B_in,SEXP n_A_in, SEXP n_B_in, SEXP op_in, SEXP in_type);
 SEXP gpu_kernal_sumby(SEXP A_in, SEXP index1_in,SEXP index2_in,SEXP n_A_in,SEXP n_index_in, SEXP in_type);
 SEXP gpu_kronecker(SEXP A_in, SEXP B_in,SEXP n_A_row_in,SEXP n_A_col_in, SEXP n_B_row_in,SEXP n_B_col_in, SEXP in_type);
