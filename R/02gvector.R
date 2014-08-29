@@ -448,42 +448,53 @@ setMethod("t", "gvector",
 )
 
 setMethod("[", "gvector", 
-		function(x, i, j,...,drop=TRUE) {
-			if(!missing(j)){
-				stop("incorrect number of dimenstions")
-			}
-			checkDevice(x@device)
-			i=.check_make_valid(i, length(x),names(x))
-			ret=new("gvector", 
-					ptr=.Call("gpu_numeric_index", x@ptr, length(x), i@ptr, length(i), x@type),
-					length=length(i), type=x@type)
-			
-			if(!is.null(names(x)))
-				names(ret)=names(x)[i]
-			
-			return(ret)
-		}
+                function(x, i, j,...,drop=TRUE) {
+                        if(!missing(j)){
+                                stop("incorrect number of dimenstions")
+                        }
+			if(missing(i))
+				return(gdup(x))
+                        checkDevice(x@device)
+                        i=.check_make_valid(i, length(x),names(x))
+                        ret=new("gvector", 
+                                        ptr=.Call("gpu_numeric_index", x@ptr, length(x), i@ptr, length(i), x@type),
+                                        length=length(i), type=x@type)
+
+                        if(!is.null(names(x)))
+                                names(ret)=names(x)[i]
+
+                        return(ret)
+                }
 )
 
-setReplaceMethod("[", "gvector", 
-		function(x, i, j,..., value) {
-			
-			if(!missing(j)){
-				stop("incorrect number of dimenstions")
-			}
-			if(!(class(value) %in% c("gvector","gmatrix")))
-				value=as.gvector(value, type=x@type, dup=FALSE)
-			checkDevice(c(x@device, value@device))
-			if(x@type!=value@type)
-				type(value)=x@type
-			i=.check_make_valid(i, length(x),names(x),TRUE)
-			
-			#gpu_numeric_index_set(SEXP A_in, SEXP n_A_in, SEXP val_in, SEXP n_val_in, SEXP index_in, SEXP n_index_in)
-			junk=.Call("gpu_numeric_index_set", x@ptr, length(x), value@ptr, length(value), i@ptr, length(i), x@type)
 
-			
-			return(x)
-		}
+
+setReplaceMethod("[", "gvector", 
+                function(x, i, j,..., value) {
+
+                        if(!missing(j)){
+                                stop("incorrect number of dimenstions")
+                        }
+                        if(!(class(value) %in% c("gvector","gmatrix")))
+                                value=as.gvector(value, type=x@type, dup=FALSE)
+                        checkDevice(c(x@device, value@device))
+                        if(x@type!=value@type)
+                                type(value)=x@type
+			if(missing(i)){
+				if(length(value)!=length(x))
+					stop("Number of items to replace is not equal to the number of items")
+				tmp=.Call("gpu_cpy",value@ptr, x@ptr, length(x),x@type)
+				return(x)
+			}
+				
+                        i=.check_make_valid(i, length(x),names(x),TRUE)
+
+                        #gpu_numeric_index_set(SEXP A_in, SEXP n_A_in, SEXP val_in, SEXP n_val_in, SEXP index_in, SEXP n_index_in)
+                        junk=.Call("gpu_numeric_index_set", x@ptr, length(x), value@ptr, length(value), i@ptr, length(i), x@type)
+
+
+                        return(x)
+                }
 )
 
 as.matrix.gvector =  function(x, ...) {

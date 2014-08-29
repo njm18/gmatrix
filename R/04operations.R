@@ -221,7 +221,7 @@ setMethod("%*%", signature(x = "matrix", y= "gvector"),
 ##############################################
 #       GMM function to avoid the allocating C
 ##############################################
-gmm = function(A, B, C, trA=FALSE, trB=FALSE) {
+gmm = function(A, B, C, trA=FALSE, trB=FALSE, accum=FALSE) {
   if(class(A)=="gvector")
     A=gmatrix(A,nrow=1,dup=FALSE)
   else if(class(A)!="gmatrix")
@@ -234,11 +234,14 @@ gmm = function(A, B, C, trA=FALSE, trB=FALSE) {
     C=gmatrix(C,ncol=1,dup=FALSE)
   else if(class(C)!="gmatrix")
     stop("C must be of class 'gmatrix' or 'gvector.'")
+  accum=as.logical(accum)[1]
   
   if(A@type!=B@type || B@type !=C@type)
     stop("A, B and C must all have the same type.")
-  # SEXP gpu_gmm(SEXP A_in, SEXP B_in, SEXP C_in, SEXP transa, SEXP transb, SEXP in_type)
-  invisible(.Call("gpu_gmm", A, B, C, trA, trB, A@type))
+  if(A@type>1)
+    stop("The 'gmm' function may only be used for type 'single' or 'double.' Please convert first.")
+  # SEXP gpu_gmm(SEXP A_in, SEXP B_in, SEXP C_in, SEXP transa, SEXP transb,  SEXP accum, SEXP in_type)
+  invisible(.Call("gpu_gmm", A, B, C, trA, trB, accum, A@type))
 }
 
 

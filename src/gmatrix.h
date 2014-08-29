@@ -415,6 +415,7 @@ SEXP gpu_duplicate(SEXP in_vec, SEXP sn, SEXP in_type);
 SEXP gpu_rep_m(SEXP in_A,SEXP in_n, SEXP in_N, SEXP in_times_each, SEXP in_type);
 SEXP gpu_rep_1(SEXP in_val, SEXP in_N, SEXP in_type);
 SEXP gpu_convert(SEXP A_in, SEXP in_N, SEXP in_type, SEXP in_to_type );
+SEXP gpu_cpy(SEXP ptr_in, SEXP ptr_out, SEXP sn,SEXP in_type);
 
 //indexing an manipulation
 SEXP gpu_numeric_index(SEXP A_in, SEXP n_A_in, SEXP index_in, SEXP n_index_in, SEXP in_type);
@@ -443,7 +444,7 @@ SEXP gpu_rowLogSums(SEXP in_P, SEXP in_rows, SEXP in_cols, SEXP in_type);
 
 //matrix multiplications
 SEXP matrix_multiply(SEXP A_in, SEXP B_in, SEXP transa, SEXP transb, SEXP in_type);//ordinary matrix multiplication
-SEXP gpu_gmm(SEXP A_in, SEXP B_in, SEXP C_in, SEXP transa, SEXP transb, SEXP in_type);
+SEXP gpu_gmm(SEXP A_in, SEXP B_in, SEXP C_in, SEXP transa, SEXP transb, SEXP accum, SEXP in_type);
 SEXP gpu_outer(SEXP A_in, SEXP B_in,SEXP n_A_in, SEXP n_B_in, SEXP op_in, SEXP in_type);
 SEXP gpu_kernal_sumby(SEXP A_in, SEXP index1_in,SEXP index2_in,SEXP n_A_in,SEXP n_index_in, SEXP in_type);
 SEXP gpu_kronecker(SEXP A_in, SEXP B_in,SEXP n_A_row_in,SEXP n_A_col_in, SEXP n_B_row_in,SEXP n_B_col_in, SEXP in_type);

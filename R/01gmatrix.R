@@ -589,9 +589,20 @@ setReplaceMethod("diag", "gmatrix",
 setMethod("[", c("gmatrix","index","index"),    .twoindex)
 setMethod("[",  c("gmatrix","index","missing"), .rowindex)
 setMethod("[",  c("gmatrix","missing","index"), .colindex)
+setMethod("[", c("gmatrix","missing","missing"),    function(x, i, j, ..., drop=TRUE) return(x))
 setReplaceMethod("[", c("gmatrix","index","index"), .settwoindex)
 setReplaceMethod("[", c("gmatrix","index","missing"), .setrowindex)
 setReplaceMethod("[", c("gmatrix","missing","index"), .setcolindex)
+setReplaceMethod("[", c("gmatrix","missing","missing"), 
+	function(x, i, j,..., value) {
+		if(!(class(value) %in% c("gvector","gmatrix")))
+                	value=as.gvector(value, type=x@type, dup=FALSE)
+		if(length(value)!=length(x))
+			stop("Number of items to replace is not equal to the number of items")
+		tmp=.Call("gpu_cpy",value@ptr, x@ptr, length(x),x@type)
+		return(x)
+	}
+)
 
 
 

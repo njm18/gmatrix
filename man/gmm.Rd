@@ -7,7 +7,7 @@ Multiply two matrices with the output matrix allready allocated.
 In effect this function sets C <- A \%*\% B. This makes it possible to avoid repeated allocation and deallocation steps which are very computationaly costly.
 }
 \usage{
-gmm(A, B, C, trA=FALSE, trB=FALSE) 
+gmm(A, B, C, trA=FALSE, trB=FALSE,  accum=FALSE) 
 }
 
 \arguments{
@@ -19,6 +19,9 @@ gmm(A, B, C, trA=FALSE, trB=FALSE)
 }
   \item{trA, trB}{
   Should A or B be transposed.
+}
+  \item{accum}{
+  if accum is set to TRUE, the multiplied matrix will be added to C (i.e. C<-C+A \%*\% B).
 }
 
 
