@@ -1,0 +1,31 @@
+# Compilers
+NVCC := @NVCC@
+
+# Program-specifics
+OBJS := dist.o conversions.o general.o ops.o manipulation.o  matrix.o
+TARGET := gmatrix.so
+
+# Compiler options
+FLAGS := @NCFLAGS@
+
+# linker options
+LDFLAGS := @LDFLAGS@
+LIBS := @LIBS@
+
+# Build rules
+.SUFFIXES: .c .cu .o
+
+all: $(TARGET) 
+
+$(TARGET): $(OBJS)
+	$(NVCC) -shared $(LDFLAGS) $(LIBS) $(OBJS) -o $@
+
+%.o: %.c
+	$(NVCC) -c $(FLAGS) $< -o $@
+
+%.o: %.cu
+	$(NVCC) -c $(FLAGS) $< -o $@
+
+clean:
+	rm -rf $(OBJS) $(TARGET)
+
