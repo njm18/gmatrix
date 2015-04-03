@@ -10,11 +10,11 @@ AC_CONFIG_AUX_DIR([tools])
 AC_PROG_CC(gcc)
 
 #################### CUDA Toolkit ####################
-
+: ${CUDA_TMP=`which nvcc`}
 AC_ARG_WITH([cuda-home],
 	[AC_HELP_STRING([--with-cuda-home=DIR],
 		[full path to CUDA installation @<:@/usr/local/cuda@:>@])],
-	[CUDA_HOME="$withval"], [CUDA_HOME=/usr/local/cuda])
+	[CUDA_HOME="$withval"], [CUDA_HOME=${CUDA_TMP%%nvcc}..])
 AC_MSG_RESULT([setting CUDA home directory to ${CUDA_HOME}])
 
 NVCC=${CUDA_HOME}/bin/nvcc

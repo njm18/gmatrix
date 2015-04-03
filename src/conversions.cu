@@ -25,9 +25,9 @@ __global__ void kernal_convert(T1* y, T2* x, int ny, int operations_per_thread)
 	int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;
 	for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;
 			i < mystop; i+=blockDim.x) {
-		T2 tmpx=x[i];
-		T1 tmpy;
 		if (i < ny) {
+			T2 tmpx=x[i];
+			T1 tmpy;
 			if(IS_NAN(tmpx)) {
 				if(IS_NA<T2>(&(tmpx)))
 					MAKE_NA<T1>(&(tmpy));

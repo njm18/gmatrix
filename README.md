@@ -7,33 +7,38 @@ In addition we assume that the divice is at least of NVIDIA(R) compute capibilit
 
 Installation Instructions
 -------------------------
-1. Install the the CUDA Toolkit. The current version of 'gmatix' has been tested for CUDA Toolkit 4.0 and 5.0. 
-2. Install R. The current version of 'gmatrix' has been tested under R 2.15.0.
+1. Install the the CUDA Toolkit. The current version of 'gmatix' has been tested for CUDA Toolkit 5.0. 
+2. Install R. The current version of 'gmatrix' has been tested under R 3.0.2.
 3. Start R and then install the 'gmatrix' package with the following commands. Package compilation may take 5-10 minutes.
 
 ```
-install.packages("gmatrix.tar.gz")
+install.packages("gmatrix")
 ```
+
+Alternatively, if you would like to install the developmental version, the following command may be used:
+
+    install.packages("devtools")
+    devtools::install_github("njm18/gmatrix")
+
 	 
 Installation Note
 -----------------
-By default, when compiling, the makefile assumes that
-+ The the CUDA library files are located in the folder /usr/local/cuda/lib64.
-+ The R libraries are located in the folder /usr/include/R.
-+ The compute capibility of the target device is 2.0.
+By default, when compiling, the build process assumes that
++ The nvcc compiler is in the PATH, and that the the CUDA library files may be located based on the location of nvcc.
++ R is located in the PATH, and that the R libraries may be located using this information.
++ The compute capability of the target device is 2.0.
 
-If these are incorrect assumptions, the user may set these values and install using the follwing R commands as an example.
-First set the environmental variables:
-
-    Sys.setenv(CUDA_LIB_PATH="/usr/include/cuda-5.0/lib64")
-    Sys.setenv(R_INC_PATH="/usr/local/R/R-2.15.0/lib64/R/include")
-    Sys.setenv(NVCC_ARCH="-gencode arch=compute_30,code=sm_30")
-    
-Next install the package as above:
+If these are incorrect assumptions, the user may set these values and install using the following R command as an example.
 
 ```
-install.packages("gmatrix.tar.gz")
+install.packages("gmatrix" ,  
+   configure.args = "
+      --with-arch=sm_30
+      --with-cuda-home=/opt/cuda
+      --with-r-home==/opt/R"
+)
 ```
+
 	    
 Testing the Installation
 -------------------------
