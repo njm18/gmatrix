@@ -289,7 +289,7 @@ convertType= function(x, to, dup=TRUE) {
 	if(!(class(x) %in% c("gmatrix", "gvector")))
 		stop("x is not a gpu object, so it's type cannot be converted")
 	#cat(x@device, x@type, class(x),"\n")
-	print(x)
+	#print(x)
 	checkDevice(x@device)
 	totype=.type_num(to)
 	fromtype=x@type
