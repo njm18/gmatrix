@@ -2519,13 +2519,13 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 #################### CUDA Toolkit ####################
-
+: ${CUDA_TMP=`which nvcc`}
 
 # Check whether --with-cuda-home was given.
 if test "${with_cuda_home+set}" = set; then
   withval=$with_cuda_home; CUDA_HOME="$withval"
 else
-  CUDA_HOME=/usr/local/cuda
+  CUDA_HOME=${CUDA_TMP%%nvcc}..
 fi
 
 { $as_echo "$as_me:$LINENO: result: setting CUDA home directory to ${CUDA_HOME}" >&5
