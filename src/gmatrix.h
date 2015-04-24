@@ -412,7 +412,7 @@ SEXP gpu_create(SEXP in_mat, SEXP in_type);
 SEXP gpu_register(struct gpuvec *in_mat);
 SEXP gpu_get(SEXP ptr, SEXP sn, SEXP in_type);
 SEXP gpu_duplicate(SEXP in_vec, SEXP sn, SEXP in_type);
-SEXP gpu_rep_m(SEXP in_A,SEXP in_n, SEXP in_N, SEXP in_times_each, SEXP in_type);
+SEXP gpu_rep_m(SEXP in_A,SEXP in_n, SEXP in_times, SEXP in_each, SEXP in_type);
 SEXP gpu_rep_1(SEXP in_val, SEXP in_N, SEXP in_type);
 SEXP gpu_convert(SEXP A_in, SEXP in_N, SEXP in_type, SEXP in_to_type );
 SEXP gpu_cpy(SEXP ptr_in, SEXP ptr_out, SEXP sn,SEXP in_type);

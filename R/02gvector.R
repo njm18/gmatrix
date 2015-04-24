@@ -33,32 +33,28 @@ gvector = function(length, type="d") {
 	return(g.rep(0, times=length, type=type))
 }
 
-g.rep =function(x, times=1L, each=NULL, type=NULL) {
+g.rep =function(x, times=1L, each=1L, type=NULL) {
 	if(is.null(type))
 		tryCatch(typeno<- .Rclass_to_type(x),
 				error=function(i) stop("Class of data cannot be converted to gpu type.", call. = FALSE))
 	else
 		typeno=.type_num(type)
-	times=times[1]
-	ret = new("gvector",length=as.integer(length(x)*times), type=typeno)
+	times=as.integer(times[1])
+	each=as.integer(each[1])
+	ret = new("gvector",length=as.integer(length(x)*times*each), type=typeno)
 	if(length(ret)==0)
 		return(ret)
 	if(length(x)==1L) {
 		tryCatch(x <- .convert_to_appropriate_class(x,typeno), error=function(e) stop("Invalid value for x, or invalid type.", call. = FALSE))
-		ret@ptr = .Call("gpu_rep_1",x,as.integer(times) ,typeno)#gpu_rep_1(SEXP in_val, SEXP in_N)
+		ret@ptr = .Call("gpu_rep_1",x,length(ret) ,typeno)#gpu_rep_1(SEXP in_val, SEXP in_N)
 	} else {
-		
-		if(is.null(each)) 
-			te=1L
-		else
-			te=0L
 		
 		if(class(x)!="gvector")
 			x=as.gvector(x)
 		x=convertType(x,typeno,dup=FALSE)
 		x@names=NULL
 		
-		ret@ptr = .Call("gpu_rep_m", x@ptr, as.integer(length(x)), as.integer(times), te , typeno)#gpu_rep_m(SEXP in_A,SEXP in_n, SEXP in_N, SEXP in_times_each);
+		ret@ptr = .Call("gpu_rep_m", x@ptr, as.integer(length(x)), times, each , typeno)#gpu_rep_m(SEXP in_A,SEXP in_n, SEXP in_N, SEXP in_times_each);
 	}
 	
 	return(ret)

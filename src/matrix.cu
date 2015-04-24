@@ -267,25 +267,20 @@ SEXP gpu_rep_1(SEXP in_val, SEXP in_N, SEXP in_type)
 }
 
 template <typename T>
-__global__ void kernal_rep(T* y, int n, T* setval, int N, int times_each, int operations_per_thread)
+__global__ void kernal_rep(T* y, int ny, T* x, int nx, int each, int operations_per_thread)
 {
 	int id = blockDim.x * blockIdx.x + threadIdx.x;
 	int mystart = operations_per_thread * id;
 	int mystop = operations_per_thread + mystart;
 
 	for ( int i = mystart; i < mystop; i++) {
-		if (i < N*n) {
+		if (i < ny) {
 		//	printf("i = %d, n = %d, N =%d, imodn=%d,  i / N=%d, time_each=%d \n",i,n,N,i % n,i / N, times_each);
-			if(times_each==1) {//times
-				y[i] =  setval[i % n];
-			} else {
-				y[i] =  setval[i / N];
-			}
 		}
 	}
 }
 
-SEXP gpu_rep_m(SEXP in_A,SEXP in_n, SEXP in_N, SEXP in_times_each, SEXP in_type)
+SEXP gpu_rep_m(SEXP in_A,SEXP in_n, SEXP in_times, SEXP in_each, SEXP in_type)
 {
 	SEXP ptr;
 
@@ -294,20 +289,20 @@ SEXP gpu_rep_m(SEXP in_A,SEXP in_n, SEXP in_N, SEXP in_times_each, SEXP in_type)
 	struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(in_A);
 
 	int n = INTEGER(in_n)[0]; //length(in_A)
-	int N = INTEGER(in_N)[0]; //times to replicate
-	int times_each = INTEGER(in_times_each)[0];
+	int times = INTEGER(in_times)[0]; //times to replicate
+	int each = INTEGER(in_each)[0];
 	PROCESS_TYPE;
 	DECERROR1;
 //#ifdef DEBUG
 
 //#endif
-	int myn=n*N;
+	int myn=each*times*n;
 	//Rprintf("n = %d, N = %d, times_each = %d, myn=%d\n", n, N, times_each,myn);
 	CUDA_MALLOC( ret->d_vec, myn*mysizeof );
 	GET_BLOCKS_PER_GRID(myn);
 
 	#define KERNAL(PTR,T)\
-		kernal_rep< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(ret), n, PTR(A), N, times_each, operations_per_thread);
+		kernal_rep< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(ret), myn, PTR(A), times, each, operations_per_thread);
 	CALL_KERNAL;
 	#undef KERNAL
 
