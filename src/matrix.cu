@@ -303,7 +303,7 @@ SEXP gpu_rep_m(SEXP in_A,SEXP in_n, SEXP in_times, SEXP in_each, SEXP in_type)
 	GET_BLOCKS_PER_GRID(myn);
 
 	#define KERNAL(PTR,T)\
-		kernal_rep< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(ret), myn, PTR(A), times, each, operations_per_thread);
+		kernal_rep< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(ret), myn, PTR(A), n, each, operations_per_thread);
 	CALL_KERNAL;
 	#undef KERNAL
 
