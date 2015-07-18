@@ -276,6 +276,7 @@ __global__ void kernal_rep(T* y, int ny, T* x, int nx, int each, int operations_
 	for ( int i = mystart; i < mystop; i++) {
 		if (i < ny) {
 		//	printf("i = %d, n = %d, N =%d, imodn=%d,  i / N=%d, time_each=%d \n",i,n,N,i % n,i / N, times_each);
+			y[i] =  x[(i / each) % nx];
 		}
 	}
 }
