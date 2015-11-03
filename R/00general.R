@@ -139,13 +139,22 @@ checkDevice = function(x) {
 }
 
 setTuningPameters=function(force=TRUE, threads_per_block=as.integer(2^8),
-		total_states=as.integer(32*14*16), state=sample.int(10^6,1)) {
+		total_states=as.integer(32*14*16), state=unclass(Sys.time())) {
 	tmp=.C("set_threads_per_block", as.integer(threads_per_block))
 	#SEXP setup_curand(SEXP in_total_states, SEXP in_seed, SEXP in_silent, SEXP in_force)
 	tmp=.Call("setup_curand", as.integer(total_states), as.integer(state), as.logical(.silent), as.logical(force))
 }
 	
-
+gset.seed=function(seed=unclass(Sys.time()), total_states=as.integer(32*14*16), silent=TRUE) {
+	total_states=as.integer(total_states)
+	if(total_states<as.integer(32*14*16))
+		stop("Please make 'total_states' larger.")
+	if(total_states>2^20)
+		stop("Please make 'total_states' smaller.")
+	state=as.integer(state)
+	tmp=.Call("setup_curand", as.integer(total_states), as.integer(state), as.logical(silent), as.logical(TRUE))
+	invisible(tmp)
+}
 #.resetDevice = function() {
 #	warning("Any prviously created GPU variables will now be removed from the GPU.
 #			Referencing such variables will have undesired consequences.")

@@ -176,7 +176,6 @@ SEXP setup_curand(SEXP in_total_states, SEXP in_seed, SEXP in_silent, SEXP in_fo
 	return in_total_states;
 }
 
-
 void startCublas(int* silent) { // must be called with .C interface
 	cublasStatus_t status1;
 	if(dev_cublas_set[currentDevice]==0) {

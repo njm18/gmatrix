@@ -77,11 +77,12 @@ SEXP gpu_numeric_index(SEXP A_in, SEXP n_A_in, SEXP index_in, SEXP n_index_in, S
 	CUDA_MALLOC(ret->d_vec, n_ret * mysizeof);
 
 
-	GET_BLOCKS_PER_GRID(n_ret);
-	//kernal_mult_scaler<<<blocksPerGrid, (threads_per_block[currentDevice])>>>(A->d_vec,PTR(ret),1, n, operations_per_thread);
-#define KERNAL(PTR,T)\
-	kernal_numeric_index< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(A), n_A,\
-			PTR(ret),	n_ret, (int *) (d_index->d_vec), operations_per_thread);
+
+	//kernal_mult_scaler<<<blocksPerGrid, (tpb)>>>(A->d_vec,PTR(ret),1, n, operations_per_thread);
+	#define KERNAL(PTR,T)\
+		GET_BLOCKS_PER_GRID(n_ret,kernal_numeric_index< T >);\
+		kernal_numeric_index< T ><<<blocksPerGrid, (tpb)>>>(PTR(A), n_A,\
+				PTR(ret),	n_ret, (int *) (d_index->d_vec), operations_per_thread);
 	CALL_KERNAL;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);
@@ -144,12 +145,13 @@ SEXP gpu_gmatrix_index_row(SEXP A_in, SEXP n_row_A_in, SEXP n_col_A_in, SEXP ind
 	//CUDA_MEMCPY_CLEAN(d_index, index, n_row_ret* sizeof(int), cudaMemcpyHostToDevice);
 	CUDA_MALLOC(ret->d_vec , n_row_ret*n_col_A * mysizeof) ;
 
-	GET_BLOCKS_PER_GRID(n_row_ret*n_col_A);
-#define KERNAL(PTR,T)\
-	kernal_gmatrix_index_row< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(A), n_row_A, n_col_A,\
-			PTR(ret),	n_row_ret, (int *) (d_index->d_vec), operations_per_thread);
 
-			CALL_KERNAL;
+	#define KERNAL(PTR,T)\
+		GET_BLOCKS_PER_GRID(n_row_ret*n_col_A,kernal_gmatrix_index_row< T >);\
+		kernal_gmatrix_index_row< T ><<<blocksPerGrid, (tpb)>>>(PTR(A), n_row_A, n_col_A,\
+				PTR(ret),	n_row_ret, (int *) (d_index->d_vec), operations_per_thread);
+
+	CALL_KERNAL;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);
 
@@ -208,11 +210,12 @@ SEXP gpu_gmatrix_index_col(SEXP A_in, SEXP n_row_A_in, SEXP n_col_A_in, SEXP ind
 	//CUDA_MEMCPY_CLEAN(d_index, index, n_col_ret* sizeof(int), cudaMemcpyHostToDevice);
 	CUDA_MALLOC(ret->d_vec , n_col_ret*n_row_A  * mysizeof) ;
 
-	GET_BLOCKS_PER_GRID(n_col_ret*n_row_A);
-#define KERNAL(PTR,T)\
-	kernal_gmatrix_index_col< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(A), n_row_A, n_col_A,\
-			PTR(ret),	n_col_ret, (int *) (d_index->d_vec), operations_per_thread);
-		CALL_KERNAL;
+
+	#define KERNAL(PTR,T)\
+		GET_BLOCKS_PER_GRID(n_col_ret*n_row_A,kernal_gmatrix_index_col< T >);\
+		kernal_gmatrix_index_col< T ><<<blocksPerGrid, (tpb)>>>(PTR(A), n_row_A, n_col_A,\
+				PTR(ret),	n_col_ret, (int *) (d_index->d_vec), operations_per_thread);
+	CALL_KERNAL;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);
 
@@ -286,10 +289,11 @@ SEXP gpu_gmatrix_index_both(SEXP A_in, SEXP n_row_A_in, SEXP n_col_A_in,
 
 	CUDA_MALLOC(ret->d_vec , n_col_ret*n_row_ret*mysizeof) ;
 
-	GET_BLOCKS_PER_GRID(n_col_ret*n_row_ret);
-#define KERNAL(PTR,T)\
-	kernal_gmatrix_index_both< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(A), n_row_A, n_col_A,\
-			PTR(ret),	n_row_ret,n_col_ret, (int *) (d_index_row->d_vec), (int *) (d_index_col->d_vec), operations_per_thread);
+
+	#define KERNAL(PTR,T)\
+		GET_BLOCKS_PER_GRID(n_col_ret*n_row_ret,kernal_gmatrix_index_both< T >);\
+		kernal_gmatrix_index_both< T ><<<blocksPerGrid, (tpb)>>>(PTR(A), n_row_A, n_col_A,\
+				PTR(ret),	n_row_ret,n_col_ret, (int *) (d_index_row->d_vec), (int *) (d_index_col->d_vec), operations_per_thread);
 	CALL_KERNAL;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);
@@ -358,11 +362,12 @@ SEXP gpu_numeric_index_set(SEXP A_in, SEXP n_A_in, SEXP val_in, SEXP n_val_in, S
 	//CUDA_MALLOC(d_index, n_val * sizeof(int));
 	//CUDA_MEMCPY_CLEAN(d_index, index, n_val* sizeof(int), cudaMemcpyHostToDevice);
 
-	GET_BLOCKS_PER_GRID(n_val);
-	//kernal_mult_scaler< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(A),PTR(val),1, n, operations_per_thread);
-#define KERNAL(PTR,T)\
-	kernal_numeric_index_set< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(A), n_A,\
-			PTR(val),	n_val, n_index,  (int *) (d_index->d_vec), operations_per_thread);
+
+	//kernal_mult_scaler< T ><<<blocksPerGrid, (tpb)>>>(PTR(A),PTR(val),1, n, operations_per_thread);
+	#define KERNAL(PTR,T)\
+		GET_BLOCKS_PER_GRID(n_val,kernal_numeric_index_set< T >);\
+		kernal_numeric_index_set< T ><<<blocksPerGrid, (tpb)>>>(PTR(A), n_A,\
+				PTR(val),	n_val, n_index,  (int *) (d_index->d_vec), operations_per_thread);
 	CALL_KERNAL;
 	#undef KERNAL
 	//CUDA_CHECK_KERNAL_CLEAN_1(d_index);
@@ -425,10 +430,11 @@ SEXP gpu_gmatrix_index_row_set(SEXP A_in, SEXP n_row_A_in, SEXP n_col_A_in, SEXP
 	//CUDA_MALLOC(d_index, n_row_replace * sizeof(int));
 	//CUDA_MEMCPY_CLEAN(d_index, index, n_row_replace* sizeof(int), cudaMemcpyHostToDevice);
 
-	GET_BLOCKS_PER_GRID(n_row_replace*n_col_A);
-#define KERNAL(PTR,T)\
-	kernal_gmatrix_index_row_set< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(A), n_row_A, n_col_A,\
-			PTR(val),n_val,	n_row_replace,  (int *) (d_index->d_vec), operations_per_thread);
+
+	#define KERNAL(PTR,T)\
+		GET_BLOCKS_PER_GRID(n_row_replace*n_col_A,kernal_gmatrix_index_row_set< T >);\
+		kernal_gmatrix_index_row_set< T ><<<blocksPerGrid, (tpb)>>>(PTR(A), n_row_A, n_col_A,\
+				PTR(val),n_val,	n_row_replace,  (int *) (d_index->d_vec), operations_per_thread);
 	CALL_KERNAL;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL;
@@ -493,10 +499,11 @@ SEXP gpu_gmatrix_index_col_set(SEXP A_in, SEXP n_row_A_in, SEXP n_col_A_in,  SEX
 	//CUDA_MEMCPY_CLEAN(d_index, index, n_col_replace* sizeof(int), cudaMemcpyHostToDevice);
 
 
-	GET_BLOCKS_PER_GRID(n_col_replace*n_row_A);
-#define KERNAL(PTR,T)\
-	kernal_gmatrix_index_col_set< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(A), n_row_A, n_col_A,\
-			PTR(val),n_val, n_col_replace,  (int *) (d_index->d_vec), operations_per_thread);
+
+	#define KERNAL(PTR,T)\
+		GET_BLOCKS_PER_GRID(n_col_replace*n_row_A,kernal_gmatrix_index_col_set< T >);\
+		kernal_gmatrix_index_col_set< T ><<<blocksPerGrid, (tpb)>>>(PTR(A), n_row_A, n_col_A,\
+				PTR(val),n_val, n_col_replace,  (int *) (d_index->d_vec), operations_per_thread);
 	CALL_KERNAL;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL;
@@ -571,10 +578,11 @@ SEXP gpu_gmatrix_index_both_set(SEXP A_in, SEXP n_row_A_in, SEXP n_col_A_in, SEX
 	//CUDA_MEMCPY_CLEAN_1(d_index_col, index_col, n_col_replace*sizeof(int), cudaMemcpyHostToDevice, d_index_row);
 
 
-	GET_BLOCKS_PER_GRID(n_col_replace*n_row_replace);
-#define KERNAL(PTR,T)\
-	kernal_gmatrix_index_both_set< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(A), n_row_A, n_col_A,\
-			PTR(val),	n_val, n_row_replace,n_col_replace,  (int *) (d_index_row->d_vec),  (int *) (d_index_col->d_vec), operations_per_thread);
+
+	#define KERNAL(PTR,T)\
+		GET_BLOCKS_PER_GRID(n_col_replace*n_row_replace, kernal_gmatrix_index_both_set< T >);\
+		kernal_gmatrix_index_both_set< T ><<<blocksPerGrid, (tpb)>>>(PTR(A), n_row_A, n_col_A,\
+				PTR(val),	n_val, n_row_replace,n_col_replace,  (int *) (d_index_row->d_vec),  (int *) (d_index_col->d_vec), operations_per_thread);
 	CALL_KERNAL;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL;
@@ -618,9 +626,10 @@ SEXP gpu_naive_transpose(SEXP A_in, SEXP n_row_in, SEXP n_col_in, SEXP in_type)
 	//allocate
 	CUDA_MALLOC(ret->d_vec,   n *mysizeof);
 
-	GET_BLOCKS_PER_GRID(n);
-#define KERNAL(PTR,T)\
-	kernal_naive_transpose< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(A),PTR(ret),n_row,n_col, operations_per_thread);
+
+	#define KERNAL(PTR,T)\
+		GET_BLOCKS_PER_GRID(n,kernal_naive_transpose< T >);\
+		kernal_naive_transpose< T ><<<blocksPerGrid, (tpb)>>>(PTR(A),PTR(ret),n_row,n_col, operations_per_thread);
 	CALL_KERNAL;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);
@@ -658,9 +667,10 @@ SEXP gpu_diag_get(SEXP A_in, SEXP n_row_in, SEXP n_col_in, SEXP in_type)
 	CUDA_MALLOC(ret->d_vec,   n *mysizeof);
 	//cudaStat = cudaMalloc ((void**)&(PTR(ret)) , n * sizeof(double)) ;
 
-	GET_BLOCKS_PER_GRID(n);
-#define KERNAL(PTR,T)\
-	kernal_diag_get< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(A),PTR(ret),n_row,n, operations_per_thread);
+
+	#define KERNAL(PTR,T)\
+		GET_BLOCKS_PER_GRID(n, kernal_diag_get< T >);\
+		kernal_diag_get< T ><<<blocksPerGrid, (tpb)>>>(PTR(A),PTR(ret),n_row,n, operations_per_thread);
 	CALL_KERNAL;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);
@@ -698,9 +708,10 @@ SEXP gpu_diag_set(SEXP A_in, SEXP n_row_in, SEXP n_col_in, SEXP val_in, SEXP n_v
 	struct gpuvec *val = (struct gpuvec*) R_ExternalPtrAddr(val_in);
 	PROCESS_TYPE_NO_SIZE;
 
-	GET_BLOCKS_PER_GRID(n);
-#define KERNAL(PTR,T)\
-	kernal_diag_set< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(A),PTR(val),n_row, n, operations_per_thread);
+
+	#define KERNAL(PTR,T)\
+		GET_BLOCKS_PER_GRID(n,kernal_diag_set< T >);\
+		kernal_diag_set< T ><<<blocksPerGrid, (tpb)>>>(PTR(A),PTR(val),n_row, n, operations_per_thread);
 	CALL_KERNAL;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL;
@@ -751,9 +762,10 @@ SEXP gpu_diag_set_one(SEXP A_in, SEXP n_row_in, SEXP n_col_in, SEXP val_in, SEXP
 
 
 
-	GET_BLOCKS_PER_GRID(n);
-#define KERNAL(PTR,T)\
-	kernal_diag_set_one< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(A),val_##T ,n_row, n, operations_per_thread);
+
+	#define KERNAL(PTR,T)\
+		GET_BLOCKS_PER_GRID(n,kernal_diag_set_one< T >);\
+		kernal_diag_set_one< T ><<<blocksPerGrid, (tpb)>>>(PTR(A),val_##T ,n_row, n, operations_per_thread);
 	CALL_KERNAL;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL;

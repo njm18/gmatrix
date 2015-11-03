@@ -254,11 +254,12 @@ SEXP gpu_rep_1(SEXP in_val, SEXP in_N, SEXP in_type)
 	Rprintf("length = %d\n", n);
 #endif
 	CUDA_MALLOC( my_gpuvec->d_vec, N*mysizeof );
-	GET_BLOCKS_PER_GRID(N);
-#define KERNAL(PTR,T)\
-	kernal_init_double< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(my_gpuvec), N, val_##T , operations_per_thread);
+
+	#define KERNAL(PTR,T)\
+		GET_BLOCKS_PER_GRID(N, kernal_init_double< T >);\
+		kernal_init_double< T ><<<blocksPerGrid, (tpb)>>>(PTR(my_gpuvec), N, val_##T , operations_per_thread);
 	CALL_KERNAL;
-#undef KERNAL
+	#undef KERNAL
 	CUDA_CHECK_KERNAL_CLEAN_1(my_gpuvec->d_vec);
 
 
@@ -300,10 +301,11 @@ SEXP gpu_rep_m(SEXP in_A,SEXP in_n, SEXP in_times, SEXP in_each, SEXP in_type)
 	int myn=each*times*n;
 	//Rprintf("n = %d, N = %d, times_each = %d, myn=%d\n", n, N, times_each,myn);
 	CUDA_MALLOC( ret->d_vec, myn*mysizeof );
-	GET_BLOCKS_PER_GRID(myn);
+
 
 	#define KERNAL(PTR,T)\
-		kernal_rep< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(ret), myn, PTR(A), n, each, operations_per_thread);
+		GET_BLOCKS_PER_GRID(myn,kernal_rep< T >);\
+		kernal_rep< T ><<<blocksPerGrid, (tpb)>>>(PTR(ret), myn, PTR(A), n, each, operations_per_thread);
 	CALL_KERNAL;
 	#undef KERNAL
 
@@ -496,14 +498,15 @@ SEXP gpu_gmm(SEXP A_in, SEXP B_in, SEXP C_in, SEXP transa, SEXP transb, SEXP acc
 			if(colsOpA==1) {
 				//kernal_init_double(double* y, int ny, double setval, int operations_per_thread)
 				int myn=ret.rows*ret.cols;
-				GET_BLOCKS_PER_GRID(myn);
+
 				struct matrix *retptr =&ret;
 				//#define val_double 0.0;
 				//#define val_float 0.0;
 				//#define val_int 0;
 				if(ACCUM==0) {
 					#define KERNAL(PTR,T)\
-						kernal_init_double< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(retptr), myn, 0.0 , operations_per_thread);
+						GET_BLOCKS_PER_GRID(myn,kernal_init_double< T >);\
+						kernal_init_double< T ><<<blocksPerGrid, (tpb)>>>(PTR(retptr), myn, 0.0 , operations_per_thread);
 					CALL_KERNAL_SF;
 					#undef KERNAL
 
@@ -717,13 +720,14 @@ SEXP matrix_multiply(SEXP A_in, SEXP B_in, SEXP transa, SEXP transb, SEXP in_typ
 			if(colsOpA==1) {
 				//kernal_init_double(double* y, int ny, double setval, int operations_per_thread)
 				int myn=ret.rows*ret.cols;
-				GET_BLOCKS_PER_GRID(myn);
+
 				struct matrix *retptr =&ret;
 				//#define val_double 0.0;
 				//#define val_float 0.0;
 				//#define val_int 0;
 				#define KERNAL(PTR,T)\
-				 	 kernal_init_double< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(retptr), myn, 0.0 , operations_per_thread);
+					 GET_BLOCKS_PER_GRID(myn,kernal_init_double< T >);\
+				 	 kernal_init_double< T ><<<blocksPerGrid, (tpb)>>>(PTR(retptr), myn, 0.0 , operations_per_thread);
 				CALL_KERNAL_SF;
 				#undef KERNAL
 
@@ -852,10 +856,11 @@ SEXP gpu_outer(SEXP A_in, SEXP B_in,SEXP n_A_in, SEXP n_B_in, SEXP op_in, SEXP i
 	PROCESS_TYPE_SF; //only works for float or double (power is the problem)
 	CUDA_MALLOC(ret->d_vec,n * mysizeof) ;
 
-	GET_BLOCKS_PER_GRID(n);
+
 //(double* x, double* y, double* ret, int n_x,  int op, int N, int operations_per_thread)
 	#define KERNAL(PTR, T) \
-		kernal_outer< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>( PTR(A), PTR(B),PTR(ret),\
+		GET_BLOCKS_PER_GRID(n,kernal_outer< T >);\
+		kernal_outer< T ><<<blocksPerGrid, (tpb)>>>( PTR(A), PTR(B),PTR(ret),\
 			n_A, op, n, operations_per_thread);
 	CALL_KERNAL_SF;
 	#undef KERNAL
@@ -936,11 +941,12 @@ SEXP gpu_kronecker(SEXP A_in, SEXP B_in,SEXP n_A_row_in,SEXP n_A_col_in, SEXP n_
 	CUDA_MALLOC(ret->d_vec,n * mysizeof) ;
 
 
-	GET_BLOCKS_PER_GRID(n);
+
 //kernal_kronecker(double* x, double* y, double* ret, int n_row_x, int n_col_x,  int n_row_y, int n_col_y, int N, int operations_per_thread)
 	#define KERNAL(PTR,T)\
-	kernal_kronecker< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(A),PTR(B),PTR(ret),\
-			n_A_row, n_A_col,n_B_row,n_B_col, n, operations_per_thread);
+		GET_BLOCKS_PER_GRID(n,kernal_kronecker< T >);\
+		kernal_kronecker< T ><<<blocksPerGrid, (tpb)>>>(PTR(A),PTR(B),PTR(ret),\
+				n_A_row, n_A_col,n_B_row,n_B_col, n, operations_per_thread);
 	CALL_KERNAL;
 	#undef KERNAL
 
@@ -1003,11 +1009,12 @@ SEXP gpu_kernal_sumby(SEXP A_in, SEXP index1_in,SEXP index2_in,SEXP n_A_in,SEXP 
 
 	CUDA_MALLOC_CLEAN_2(ret->d_vec,  n_index*mysizeof, d_index1, d_index2);
 
-	GET_BLOCKS_PER_GRID(n_index);
+
 //kernal_sumby(double* x, double* ret, int n_x, int n_ret, int* k_start_vec,  int* k_stop_vec, int operations_per_thread)
 	#define KERNAL(PTR,T)\
-	kernal_sumby< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>> (PTR(A),PTR(ret),\
-			n_A, n_index, d_index1, d_index2, operations_per_thread);
+		GET_BLOCKS_PER_GRID(n_index,kernal_sumby< T >);\
+		kernal_sumby< T ><<<blocksPerGrid, (tpb)>>> (PTR(A),PTR(ret),\
+				n_A, n_index, d_index1, d_index2, operations_per_thread);
 	CALL_KERNAL;
 	#undef KERNAL
 
@@ -1055,12 +1062,13 @@ SEXP gpu_mat_times_diag_vec(SEXP A_in, SEXP B_in, SEXP n_row_in, SEXP n_col_in, 
 	PROCESS_TYPE;
 	CUDA_MALLOC(ret->d_vec,n * mysizeof) ;
 
-	GET_BLOCKS_PER_GRID(n);
+
 
 	//kernal_mat_times_diag_vec(double* x, double* y, double* ret, int n_row_x, int n, int operations_per_thread)
 	#define KERNAL(PTR,T)\
-	kernal_mat_times_diag_vec< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(A),PTR(B),\
-			PTR(ret),n_row, n, operations_per_thread);
+		GET_BLOCKS_PER_GRID(n,kernal_mat_times_diag_vec< T >);\
+		kernal_mat_times_diag_vec< T ><<<blocksPerGrid, (tpb)>>>(PTR(A),PTR(B),\
+				PTR(ret),n_row, n, operations_per_thread);
 	CALL_KERNAL;
 	#undef KERNAL
 
@@ -1382,15 +1390,18 @@ SEXP gpu_if(SEXP H_in, SEXP A_in, SEXP B_in,SEXP snh, SEXP sna, SEXP snb, SEXP i
 	struct gpuvec *B = (struct gpuvec*) R_ExternalPtrAddr(B_in);
 	PROCESS_TYPE;
 	CUDA_MALLOC(ret->d_vec,nh * mysizeof);
-	GET_BLOCKS_PER_GRID(na);
 
-	if(type==0)
-		kernal_if<double> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((int *) H->d_vec, (double *) A->d_vec, (double *) B->d_vec,(double *) ret->d_vec, nh, na, nb, operations_per_thread);
-	else if(type==1)
-		kernal_if<float> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((int *) H->d_vec,(float *) A->d_vec, (float *) B->d_vec, (float *) ret->d_vec,nh, na, nb, operations_per_thread);
-	else
-		kernal_if<int> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((int *) H->d_vec,(int *) A->d_vec, (int *) B->d_vec, (int *) ret->d_vec,nh, na, nb, operations_per_thread);
 
+	if(type==0) {
+		GET_BLOCKS_PER_GRID(na,kernal_if<double>);
+		kernal_if<double> <<<blocksPerGrid, (tpb)>>>((int *) H->d_vec, (double *) A->d_vec, (double *) B->d_vec,(double *) ret->d_vec, nh, na, nb, operations_per_thread);
+	} else if(type==1) {
+		GET_BLOCKS_PER_GRID(na,kernal_if<float>);
+		kernal_if<float> <<<blocksPerGrid, (tpb)>>>((int *) H->d_vec,(float *) A->d_vec, (float *) B->d_vec, (float *) ret->d_vec,nh, na, nb, operations_per_thread);
+	} else {
+		GET_BLOCKS_PER_GRID(na,kernal_if<int>);
+		kernal_if<int> <<<blocksPerGrid, (tpb)>>>((int *) H->d_vec,(int *) A->d_vec, (int *) B->d_vec, (int *) ret->d_vec,nh, na, nb, operations_per_thread);
+	}
 	CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);
 	ret_final = gpu_register(ret);
 	return ret_final;
@@ -1435,12 +1446,12 @@ SEXP gpu_rowLogSums(SEXP in_P, SEXP in_rows, SEXP in_cols, SEXP in_type)
 	PROCESS_TYPE;
 	CUDA_MALLOC(ret->d_vec,rows * mysizeof) ;
 
-	GET_BLOCKS_PER_GRID(rows);
 
 	//kernal_mat_times_diag_vec(double* x, double* y, double* ret, int n_row_x, int n, int operations_per_thread)
 	#define KERNAL(PTR,T)\
-	kernal_rowLogSums< T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(P),PTR(ret),\
-			rows, cols, operations_per_thread);
+		GET_BLOCKS_PER_GRID(rows, kernal_rowLogSums < T >);\
+		kernal_rowLogSums< T ><<<blocksPerGrid, (tpb)>>>(PTR(P),PTR(ret),\
+				rows, cols, operations_per_thread);
 	CALL_KERNAL_SF;
 	#undef KERNAL
 

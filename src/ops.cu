@@ -28,11 +28,13 @@
 			struct gpuvec *ret = Calloc(1, struct gpuvec);\
 			struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(y);\
 			CUDA_MALLOC(ret->d_vec, n * mysizeof);\
-			GET_BLOCKS_PER_GRID(n);\
-			if(type==0)\
-				kernal_##MNAME <double><<<blocksPerGrid, (threads_per_block[currentDevice])>>>((double *) A->d_vec,(double *)ret->d_vec, n, operations_per_thread);\
-			else if(type==1)\
-				kernal_##MNAME <float><<<blocksPerGrid, (threads_per_block[currentDevice])>>>((float *) A->d_vec, (float *) ret->d_vec, n, operations_per_thread);\
+			if(type==0) {\
+				GET_BLOCKS_PER_GRID(n,kernal_##MNAME <double>);\
+				kernal_##MNAME <double><<<blocksPerGrid, (tpb)>>>((double *) A->d_vec,(double *)ret->d_vec, n, operations_per_thread);\
+			} else if(type==1) {\
+				GET_BLOCKS_PER_GRID(n, kernal_##MNAME <float>);\
+				kernal_##MNAME <float><<<blocksPerGrid, (tpb)>>>((float *) A->d_vec, (float *) ret->d_vec, n, operations_per_thread);\
+			}\
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
 			return ret_final;\
@@ -59,12 +61,13 @@
 			struct gpuvec *ret = Calloc(1, struct gpuvec);\
 			struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(y);\
 			CUDA_MALLOC(ret->d_vec, n * sizeof(int));\
-			GET_BLOCKS_PER_GRID(n);\
-			if(type==0)\
-				kernal_##MNAME <double><<<blocksPerGrid, (threads_per_block[currentDevice])>>>((double *) A->d_vec,(int *)ret->d_vec, n, operations_per_thread);\
-			else if(type==1)\
-				kernal_##MNAME <float><<<blocksPerGrid, (threads_per_block[currentDevice])>>>((float *) A->d_vec, (int *) ret->d_vec, n, operations_per_thread);\
-			else\
+			if(type==0) {\
+				GET_BLOCKS_PER_GRID(n, kernal_##MNAME <double>);\
+				kernal_##MNAME <double><<<blocksPerGrid, (tpb)>>>((double *) A->d_vec,(int *)ret->d_vec, n, operations_per_thread);\
+			} else if(type==1) {\
+				GET_BLOCKS_PER_GRID(n, kernal_##MNAME <float>);\
+				kernal_##MNAME <float><<<blocksPerGrid, (tpb)>>>((float *) A->d_vec, (int *) ret->d_vec, n, operations_per_thread);\
+			} else\
 				error("'type' must be double or single.");\
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
@@ -149,11 +152,13 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 			struct gpuvec *B = (struct gpuvec*) R_ExternalPtrAddr(B_in);\
 			PROCESS_TYPE_SF;\
 			CUDA_MALLOC(ret->d_vec,n * mysizeof) ;\
-			GET_BLOCKS_PER_GRID(n);\
-			if(type==0)\
-				kernal_same_size_##MNAME <double> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((double *) A->d_vec, (double *) B->d_vec,(double *) ret->d_vec, n, operations_per_thread);\
-			else if(type==1)\
-				kernal_same_size_##MNAME <float> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((float *) A->d_vec, (float *) B->d_vec, (float *) ret->d_vec, n, operations_per_thread);\
+			if(type==0) {\
+				GET_BLOCKS_PER_GRID(n, kernal_same_size_##MNAME <double> );\
+				kernal_same_size_##MNAME <double> <<<blocksPerGrid, (tpb)>>>((double *) A->d_vec, (double *) B->d_vec,(double *) ret->d_vec, n, operations_per_thread);\
+			} else if(type==1) {\
+				GET_BLOCKS_PER_GRID(n, kernal_same_size_##MNAME <float> );\
+				kernal_same_size_##MNAME <float> <<<blocksPerGrid, (tpb)>>>((float *) A->d_vec, (float *) B->d_vec, (float *) ret->d_vec, n, operations_per_thread);\
+			}\
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
 			return ret_final;\
@@ -178,13 +183,14 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 			struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(A_in);\
 			PROCESS_TYPE_SF;\
 			CUDA_MALLOC(ret->d_vec,n * mysizeof) ;\
-			GET_BLOCKS_PER_GRID(n);\
 			if(type==0) {\
 				double B = REAL(B_in)[0];\
-				kernal_scaler_##MNAME <double> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((double *) A->d_vec,(double *) ret->d_vec, B, n, operations_per_thread);\
+				GET_BLOCKS_PER_GRID(n, kernal_scaler_##MNAME <double>);\
+				kernal_scaler_##MNAME <double> <<<blocksPerGrid, (tpb)>>>((double *) A->d_vec,(double *) ret->d_vec, B, n, operations_per_thread);\
 			} else if(type==1) {\
 				float B = (float) REAL(B_in)[0];\
-				kernal_scaler_##MNAME <float> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((float *) A->d_vec,(float *) ret->d_vec, B, n, operations_per_thread);\
+				GET_BLOCKS_PER_GRID(n,kernal_scaler_##MNAME <float>);\
+				kernal_scaler_##MNAME <float> <<<blocksPerGrid, (tpb)>>>((float *) A->d_vec,(float *) ret->d_vec, B, n, operations_per_thread);\
 			}\
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
@@ -213,11 +219,13 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 			struct gpuvec *B = (struct gpuvec*) R_ExternalPtrAddr(B_in);\
 			PROCESS_TYPE_SF;\
 			CUDA_MALLOC(ret->d_vec,na * mysizeof) ;\
-			GET_BLOCKS_PER_GRID(na);\
-			if(type==0)\
-				kernal_diff_size_##MNAME <double> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((double *) A->d_vec, (double *) B->d_vec,(double *) ret->d_vec, na, nb, operations_per_thread);\
-			else if(type==1)\
-				kernal_diff_size_##MNAME <float> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((float *) A->d_vec, (float *) B->d_vec, (float *) ret->d_vec, na, nb, operations_per_thread);\
+			if(type==0) {\
+				GET_BLOCKS_PER_GRID(na, kernal_diff_size_##MNAME <double>);\
+				kernal_diff_size_##MNAME <double> <<<blocksPerGrid, (tpb)>>>((double *) A->d_vec, (double *) B->d_vec,(double *) ret->d_vec, na, nb, operations_per_thread);\
+			} else if(type==1) {\
+				GET_BLOCKS_PER_GRID(na, kernal_diff_size_##MNAME <float>);\
+				kernal_diff_size_##MNAME <float> <<<blocksPerGrid, (tpb)>>>((float *) A->d_vec, (float *) B->d_vec, (float *) ret->d_vec, na, nb, operations_per_thread);\
+			} \
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
 			return ret_final;\
@@ -245,13 +253,16 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 			struct gpuvec *B = (struct gpuvec*) R_ExternalPtrAddr(B_in);\
 			PROCESS_TYPE;\
 			CUDA_MALLOC(ret->d_vec,n * mysizeof) ;\
-			GET_BLOCKS_PER_GRID(n);\
-			if(type==0)\
-				kernal_same_size_##MNAME <double> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((double *) A->d_vec, (double *) B->d_vec,(double *) ret->d_vec, n, operations_per_thread);\
-			else if(type==1)\
-				kernal_same_size_##MNAME <float> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((float *) A->d_vec, (float *) B->d_vec, (float *) ret->d_vec, n, operations_per_thread);\
-			else\
-				kernal_same_size_##MNAME <int> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((int *) A->d_vec, (int *) B->d_vec, (int *) ret->d_vec, n, operations_per_thread);\
+			if(type==0) {\
+				GET_BLOCKS_PER_GRID(n,kernal_same_size_##MNAME <double>);\
+				kernal_same_size_##MNAME <double> <<<blocksPerGrid, (tpb)>>>((double *) A->d_vec, (double *) B->d_vec,(double *) ret->d_vec, n, operations_per_thread);\
+			} else if(type==1) {\
+				GET_BLOCKS_PER_GRID(n,kernal_same_size_##MNAME <float>);\
+				kernal_same_size_##MNAME <float> <<<blocksPerGrid, (tpb)>>>((float *) A->d_vec, (float *) B->d_vec, (float *) ret->d_vec, n, operations_per_thread);\
+			} else {\
+				GET_BLOCKS_PER_GRID(n,kernal_same_size_##MNAME <int>);\
+				kernal_same_size_##MNAME <int> <<<blocksPerGrid, (tpb)>>>((int *) A->d_vec, (int *) B->d_vec, (int *) ret->d_vec, n, operations_per_thread);\
+			}\
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
 			return ret_final;\
@@ -276,16 +287,18 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 			struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(A_in);\
 			PROCESS_TYPE;\
 			CUDA_MALLOC(ret->d_vec,n * mysizeof) ;\
-			GET_BLOCKS_PER_GRID(n);\
 			if(type==0){\
 				double B = REAL(B_in)[0];\
-				kernal_scaler_##MNAME <double> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((double *) A->d_vec,(double *) ret->d_vec, B, n, operations_per_thread);\
+				GET_BLOCKS_PER_GRID(n,kernal_scaler_##MNAME <double>);\
+				kernal_scaler_##MNAME <double> <<<blocksPerGrid, (tpb)>>>((double *) A->d_vec,(double *) ret->d_vec, B, n, operations_per_thread);\
 			} else if(type==1) {\
 				float B = (float)REAL(B_in)[0];\
-				kernal_scaler_##MNAME <float> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((float *) A->d_vec,(float *) ret->d_vec, (float) B, n, operations_per_thread);\
+				GET_BLOCKS_PER_GRID(n,kernal_scaler_##MNAME <float>);\
+				kernal_scaler_##MNAME <float> <<<blocksPerGrid, (tpb)>>>((float *) A->d_vec,(float *) ret->d_vec, (float) B, n, operations_per_thread);\
 			} else {\
 				int B = INTEGER(B_in)[0];\
-				kernal_scaler_##MNAME <int> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((int *) A->d_vec,(int *) ret->d_vec, (int) B, n, operations_per_thread);\
+				GET_BLOCKS_PER_GRID(n,kernal_scaler_##MNAME <int>);\
+				kernal_scaler_##MNAME <int> <<<blocksPerGrid, (tpb)>>>((int *) A->d_vec,(int *) ret->d_vec, (int) B, n, operations_per_thread);\
 			}\
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
@@ -314,13 +327,16 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 			struct gpuvec *B = (struct gpuvec*) R_ExternalPtrAddr(B_in);\
 			PROCESS_TYPE;\
 			CUDA_MALLOC(ret->d_vec,na * mysizeof) ;\
-			GET_BLOCKS_PER_GRID(na);\
-			if(type==0)\
-				kernal_diff_size_##MNAME <double> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((double *) A->d_vec, (double *) B->d_vec,(double *) ret->d_vec, na, nb, operations_per_thread);\
-			else if(type==1)\
-				kernal_diff_size_##MNAME <float> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((float *) A->d_vec, (float *) B->d_vec, (float *) ret->d_vec, na, nb, operations_per_thread);\
-			else \
-				kernal_diff_size_##MNAME <int> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((int *) A->d_vec, (int *) B->d_vec, (int *) ret->d_vec, na, nb, operations_per_thread);\
+			if(type==0) {\
+				GET_BLOCKS_PER_GRID(na, kernal_diff_size_##MNAME <double>);\
+				kernal_diff_size_##MNAME <double> <<<blocksPerGrid, (tpb)>>>((double *) A->d_vec, (double *) B->d_vec,(double *) ret->d_vec, na, nb, operations_per_thread);\
+			} else if(type==1) {\
+				GET_BLOCKS_PER_GRID(na, kernal_diff_size_##MNAME <float>);\
+				kernal_diff_size_##MNAME <float> <<<blocksPerGrid, (tpb)>>>((float *) A->d_vec, (float *) B->d_vec, (float *) ret->d_vec, na, nb, operations_per_thread);\
+			} else {\
+				GET_BLOCKS_PER_GRID(na, kernal_diff_size_##MNAME <int>);\
+				kernal_diff_size_##MNAME <int> <<<blocksPerGrid, (tpb)>>>((int *) A->d_vec, (int *) B->d_vec, (int *) ret->d_vec, na, nb, operations_per_thread);\
+			}\
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
 			return ret_final;\
@@ -348,13 +364,16 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 			struct gpuvec *B = (struct gpuvec*) R_ExternalPtrAddr(B_in);\
 			PROCESS_TYPE_NO_SIZE;\
 			CUDA_MALLOC(ret->d_vec,n * sizeof(int)) ;\
-			GET_BLOCKS_PER_GRID(n);\
-			if(type==0)\
-				kernal_same_size_##MNAME <double> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((double *) A->d_vec, (double *) B->d_vec,(int *) ret->d_vec, n, operations_per_thread);\
-			else if(type==1)\
-				kernal_same_size_##MNAME <float> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((float *) A->d_vec, (float *) B->d_vec, (int *) ret->d_vec, n, operations_per_thread);\
-			else\
-				kernal_same_size_##MNAME <int> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((int *) A->d_vec, (int *) B->d_vec, (int *) ret->d_vec, n, operations_per_thread);\
+			if(type==0) {\
+				GET_BLOCKS_PER_GRID(n, kernal_same_size_##MNAME <double>);\
+				kernal_same_size_##MNAME <double> <<<blocksPerGrid, (tpb)>>>((double *) A->d_vec, (double *) B->d_vec,(int *) ret->d_vec, n, operations_per_thread);\
+			} else if(type==1) {\
+				GET_BLOCKS_PER_GRID(n, kernal_same_size_##MNAME <float>);\
+				kernal_same_size_##MNAME <float> <<<blocksPerGrid, (tpb)>>>((float *) A->d_vec, (float *) B->d_vec, (int *) ret->d_vec, n, operations_per_thread);\
+			} else {\
+				GET_BLOCKS_PER_GRID(n, kernal_same_size_##MNAME <int>);\
+				kernal_same_size_##MNAME <int> <<<blocksPerGrid, (tpb)>>>((int *) A->d_vec, (int *) B->d_vec, (int *) ret->d_vec, n, operations_per_thread);\
+			}\
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
 			return ret_final;\
@@ -379,16 +398,18 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 			struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(A_in);\
 			PROCESS_TYPE_NO_SIZE;\
 			CUDA_MALLOC(ret->d_vec,n * sizeof(int)) ;\
-			GET_BLOCKS_PER_GRID(n);\
 			if(type==0){ \
 				double B = REAL(B_in)[0];\
-				kernal_scaler_##MNAME <double> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((double *) A->d_vec,(int *) ret->d_vec, B, n, operations_per_thread);\
+				GET_BLOCKS_PER_GRID(n, kernal_scaler_##MNAME <double>);\
+				kernal_scaler_##MNAME <double> <<<blocksPerGrid, (tpb)>>>((double *) A->d_vec,(int *) ret->d_vec, B, n, operations_per_thread);\
 			} else if(type==1) {\
 				float B = (float) REAL(B_in)[0];\
-				kernal_scaler_##MNAME <float> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((float *) A->d_vec,(int *) ret->d_vec, B, n, operations_per_thread);\
+				GET_BLOCKS_PER_GRID(n, kernal_scaler_##MNAME <float>);\
+				kernal_scaler_##MNAME <float> <<<blocksPerGrid, (tpb)>>>((float *) A->d_vec,(int *) ret->d_vec, B, n, operations_per_thread);\
 			} else {\
 				int B = INTEGER(B_in)[0];\
-				kernal_scaler_##MNAME <int> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((int *) A->d_vec,(int *) ret->d_vec, (int) B, n, operations_per_thread);\
+				GET_BLOCKS_PER_GRID(n, kernal_scaler_##MNAME <int>);\
+				kernal_scaler_##MNAME <int> <<<blocksPerGrid, (tpb)>>>((int *) A->d_vec,(int *) ret->d_vec, (int) B, n, operations_per_thread);\
 			}\
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
@@ -417,13 +438,16 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 			struct gpuvec *B = (struct gpuvec*) R_ExternalPtrAddr(B_in);\
 			PROCESS_TYPE_NO_SIZE;\
 			CUDA_MALLOC(ret->d_vec,na * sizeof(int)) ;\
-			GET_BLOCKS_PER_GRID(na);\
-			if(type==0)\
-				kernal_diff_size_##MNAME <double> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((double *) A->d_vec, (double *) B->d_vec,(int *) ret->d_vec, na, nb, operations_per_thread);\
-			else if(type==1)\
-				kernal_diff_size_##MNAME <float> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((float *) A->d_vec, (float *) B->d_vec, (int *) ret->d_vec, na, nb, operations_per_thread);\
-			else \
-				kernal_diff_size_##MNAME <int> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((int *) A->d_vec, (int *) B->d_vec, (int *) ret->d_vec, na, nb, operations_per_thread);\
+			if(type==0) {\
+				GET_BLOCKS_PER_GRID(na, kernal_diff_size_##MNAME <double>);\
+				kernal_diff_size_##MNAME <double> <<<blocksPerGrid, (tpb)>>>((double *) A->d_vec, (double *) B->d_vec,(int *) ret->d_vec, na, nb, operations_per_thread);\
+			} else if(type==1) {\
+				GET_BLOCKS_PER_GRID(na, kernal_diff_size_##MNAME <float>);\
+				kernal_diff_size_##MNAME <float> <<<blocksPerGrid, (tpb)>>>((float *) A->d_vec, (float *) B->d_vec, (int *) ret->d_vec, na, nb, operations_per_thread);\
+			} else { \
+				GET_BLOCKS_PER_GRID(na, kernal_diff_size_##MNAME <int>);\
+				kernal_diff_size_##MNAME <int> <<<blocksPerGrid, (tpb)>>>((int *) A->d_vec, (int *) B->d_vec, (int *) ret->d_vec, na, nb, operations_per_thread);\
+			}\
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
 			return ret_final;\
@@ -452,10 +476,10 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 			struct gpuvec *B = (struct gpuvec*) R_ExternalPtrAddr(B_in);\
 			PROCESS_TYPE_NO_SIZE;\
 			CUDA_MALLOC(ret->d_vec,n * sizeof(int)) ;\
-			GET_BLOCKS_PER_GRID(n);\
+			GET_BLOCKS_PER_GRID(n, kernal_same_size_##MNAME <int>);\
 			if(type!=3)\
 				error("type must be logical for logical operations");\
-			kernal_same_size_##MNAME <int> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((int *) A->d_vec, (int *) B->d_vec, (int *) ret->d_vec, n, operations_per_thread);\
+			kernal_same_size_##MNAME <int> <<<blocksPerGrid, (tpb)>>>((int *) A->d_vec, (int *) B->d_vec, (int *) ret->d_vec, n, operations_per_thread);\
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
 			return ret_final;\
@@ -481,10 +505,10 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 			int B = INTEGER(B_in)[0];\
 			PROCESS_TYPE_NO_SIZE;\
 			CUDA_MALLOC(ret->d_vec,n * sizeof(int)) ;\
-			GET_BLOCKS_PER_GRID(n);\
+			GET_BLOCKS_PER_GRID(n, kernal_scaler_##MNAME <int> );\
 			if(type!=3)\
 				error("type must be logical for logical operations");\
-			kernal_scaler_##MNAME <int> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((int *) A->d_vec,(int *) ret->d_vec, B, n, operations_per_thread);\
+			kernal_scaler_##MNAME <int> <<<blocksPerGrid, (tpb)>>>((int *) A->d_vec,(int *) ret->d_vec, B, n, operations_per_thread);\
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
 			return ret_final;\
@@ -512,10 +536,10 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 			struct gpuvec *B = (struct gpuvec*) R_ExternalPtrAddr(B_in);\
 			PROCESS_TYPE_NO_SIZE;\
 			CUDA_MALLOC(ret->d_vec,na * sizeof(int)) ;\
-			GET_BLOCKS_PER_GRID(na);\
+			GET_BLOCKS_PER_GRID(na, kernal_diff_size_##MNAME <int>);\
 			if(type!=3)\
 				error("type must be logical for logical operations");\
-			kernal_diff_size_##MNAME <int> <<<blocksPerGrid, (threads_per_block[currentDevice])>>>((int *) A->d_vec, (int *) B->d_vec, (int *) ret->d_vec, na, nb, operations_per_thread);\
+			kernal_diff_size_##MNAME <int> <<<blocksPerGrid, (tpb)>>>((int *) A->d_vec, (int *) B->d_vec, (int *) ret->d_vec, na, nb, operations_per_thread);\
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
 			return ret_final;\
@@ -600,8 +624,8 @@ BINARYOP_LOGICAL(or,   y[i] || x[i], y[i] || x[j], y[i] || c);
 			struct gpuvec *B = (struct gpuvec*) R_ExternalPtrAddr(B_in);\
 			int *retgpu;\
 			CUDA_MALLOC(retgpu,n * sizeof(int)) ;\
-			GET_BLOCKS_PER_GRID(n);\
-			kernal_same_size_##MNAME <<<blocksPerGrid, (threads_per_block[currentDevice])>>>(A->d_vec,B->d_vec,retgpu, n, operations_per_thread);\
+			GET_BLOCKS_PER_GRID(n, kernal_same_size_##MNAME);\
+			kernal_same_size_##MNAME <<<blocksPerGrid, (tpb)>>>(A->d_vec,B->d_vec,retgpu, n, operations_per_thread);\
 			CUDA_CHECK_KERNAL_CLEAN_1(retgpu);\
 			SEXP ret;\
 			PROTECT(ret = allocVector(INTSXP, n));\
@@ -632,8 +656,8 @@ BINARYOP_LOGICAL(or,   y[i] || x[i], y[i] || x[j], y[i] || c);
 			struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(A_in);\
 			double B = REAL(B_in)[0];\
 			CUDA_MALLOC(ret->d_vec,n * sizeof(double)) ;\
-			GET_BLOCKS_PER_GRID(n);\
-			kernal_scaler_##MNAME <<<blocksPerGrid, (threads_per_block[currentDevice])>>>(A->d_vec,ret->d_vec,B, n, operations_per_thread);\
+			GET_BLOCKS_PER_GRID(n, kernal_scaler_##MNAME );\
+			kernal_scaler_##MNAME <<<blocksPerGrid, (tpb)>>>(A->d_vec,ret->d_vec,B, n, operations_per_thread);\
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
 			return ret_final;\
@@ -660,8 +684,8 @@ BINARYOP_LOGICAL(or,   y[i] || x[i], y[i] || x[j], y[i] || c);
 			struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(A_in);\
 			struct gpuvec *B = (struct gpuvec*) R_ExternalPtrAddr(B_in);\
 			CUDA_MALLOC(ret->d_vec,na * sizeof(double)) ;\
-			GET_BLOCKS_PER_GRID(na);\
-			kernal_diff_size_##MNAME <<<blocksPerGrid, (threads_per_block[currentDevice])>>>(A->d_vec,B->d_vec,ret->d_vec, na, nb, operations_per_thread);\
+			GET_BLOCKS_PER_GRID(na, kernal_diff_size_##MNAME);\
+			kernal_diff_size_##MNAME <<<blocksPerGrid, (tpb)>>>(A->d_vec,B->d_vec,ret->d_vec, na, nb, operations_per_thread);\
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
 			return ret_final;\

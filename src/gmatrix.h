@@ -25,43 +25,35 @@
 #include <thrust/iterator/counting_iterator.h>
 
 
-//#define RTRUE (enum Rboolean) 1
-//#define RFALSE (enum Rboolean) 0
-//enum Rbooleen RTRUE;
-//#define DEBUG
-
-//#ifndef max
-//	#define max( a, b ) ( ((a) > (b)) ? (a) : (b) )
-//#endif
-
-//#ifndef min
-//	#define min( a, b ) ( ((a) < (b)) ? (a) : (b) )
-//#endif
-
 #define IDX2(i ,j ,ld) (((j)*(ld))+(i))
 
-/*
-#define GET_BLOCKS_PER_GRID(n, c1, c2, c3)  \
-	int operations_per_thread = 1000/(1+exp(-c1 - n*c2  - n*n*c3));  \
-	operations_per_thread = max(1,operations_per_thread);\
-	int total_threads = (n + operations_per_thread -1) / operations_per_thread ; \
-	int blocksPerGrid = (total_threads + (threads_per_block[currentDevice]) - 1) / (threads_per_block[currentDevice]); \
-	if(blocksPerGrid>MAX_BLOCKS) {  \
-		blocksPerGrid = MAX_BLOCKS;  \
-		total_threads = blocksPerGrid*(threads_per_block[currentDevice]); \
-		operations_per_thread = (n + total_threads -1) / total_threads; \
-	}
-*/
 
-#define GET_BLOCKS_PER_GRID(n)  \
-	int blocksPerGrid = (n + (threads_per_block[currentDevice]) - 1) / (threads_per_block[currentDevice]); \
+
+#if CUDART_VERSION < 6500
+#define GET_BLOCKS_PER_GRID(n, kern)  \
+	int tpb=threads_per_block[currentDevice];\
+	int blocksPerGrid = (n + tpb - 1) / (tpb); \
 	int operations_per_thread = 1;  \
 	if(blocksPerGrid>MAX_BLOCKS) {  \
 		blocksPerGrid = MAX_BLOCKS;  \
-		int total_threads = blocksPerGrid*(threads_per_block[currentDevice]); \
+		int total_threads = blocksPerGrid*tpb; \
 		operations_per_thread = (n + total_threads -1) / total_threads; \
 	}
+#else
+#define GET_BLOCKS_PER_GRID(n, kern)  \
+    int minGridSize;\
+	int tpb;\
+	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &tpb, kern);\
+	int blocksPerGrid = (n + tpb - 1) / (tpb); \
+	int operations_per_thread = 1;  \
+	if(blocksPerGrid>MAX_BLOCKS) {  \
+		blocksPerGrid = MAX_BLOCKS;  \
+		int total_threads = blocksPerGrid*tpb; \
+		operations_per_thread = (n + total_threads -1) / total_threads; \
+	}
+#endif
 
+//Rprintf("tpb = %d, operations_per_thread = %d, blocksPerGrid = %d, minGridSize=%d\n", tpb, operations_per_thread, blocksPerGrid, minGridSize);
 
 #define DECERROR0 cudaError_t  cudaStat
 #define DECERROR1 cudaError_t  cudaStat, status1
@@ -245,18 +237,20 @@
 		(int *) A->d_vec
 
 #define CALL_KERNAL\
-		if(type==0)\
+		if(type==0) {\
 			KERNAL(PTR_DBL, double)\
-		else if(type==1)\
+		} else if(type==1) {\
 			KERNAL(PTR_FLOAT, float)\
-		else \
+		} else {\
 			KERNAL(PTR_INT, int)\
+		}
 
 #define CALL_KERNAL_SF\
-		if(type==0)\
+		if(type==0) {\
 			KERNAL(PTR_DBL, double)\
-		else if(type==1)\
+		} else if(type==1) {\
 			KERNAL(PTR_FLOAT, float)\
+		}
 
 
 #define MAX_DEVICE 20

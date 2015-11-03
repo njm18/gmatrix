@@ -4,7 +4,7 @@
 Set tuning parameters
 }
 \description{
-These methods tune the kernal calls to a specific GPU. At this point, these parameters are not well documented and should only be changed by users who can read the source code.
+This function tunes the kernal calls to a specific GPU if the user is working with CUDA versions older than 6.5. At this point, these parameters are not well documented and should only be changed by users who can read the source code.
 }
 \usage{
 setTuningPameters(force = TRUE, threads_per_block = as.integer(2^8), 

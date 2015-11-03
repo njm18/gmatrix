@@ -42,11 +42,55 @@ __device__ T cuda_rnrm(curandState *state) {
 #define NRM2 cuda_rnrm<T>(state)
 
 //sims per thread must be even and two or greater
-#define SETUP_RAND\
+
+#if CUDART_VERSION < 6500
+#define SETUP_RAND(kern)\
+	int blocksPerGrid;\
+	int tpb=threads_per_block[currentDevice];\
+	int simulations_per_thread = ((total_states[currentDevice]) + n - 1) / (total_states[currentDevice]);\
+	do {\
+		int total_threads = (n +simulations_per_thread) / simulations_per_thread;\
+		int blocksPerGrid = (total_threads + (tpb) - 1) / (tpb);\
+		simulations_per_thread++;\
+	} while( (blocksPerGrid*tpb) >total_states[currentDevice]);\
+    simulations_per_thread--;
+#else
+#define SETUP_RAND(kern)\
+    int minGridSize;\
+	int tpb;\
+	int blocksPerGrid;\
+	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &tpb, kern);\
+	int simulations_per_thread = ((total_states[currentDevice]) + n - 1) / (total_states[currentDevice]);\
+	do {\
+		int total_threads = (n +simulations_per_thread) / simulations_per_thread;\
+		blocksPerGrid = (total_threads + (tpb) - 1) / (tpb);\
+		simulations_per_thread++;\
+	} while( (blocksPerGrid*tpb) > total_states[currentDevice]);\
+    simulations_per_thread--;
+#endif
+//Note while loop - if total_states[currentDevice] is not a multiple of tpb we may need to simulate more per thread
+//                  so that the last block isn't accessing a state beyond the bounds
+
+/*
+#define SETUP_RAND(kern)\
+    int minGridSize;\
+	int tpb;\
+	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &tpb, kern);\
 	int simulations_per_thread = ((total_states[currentDevice]) + n - 1) / (total_states[currentDevice]);\
 	int total_threads = (n +simulations_per_thread) / simulations_per_thread;\
-	int blocksPerGrid = (total_threads + (threads_per_block[currentDevice]) - 1) / (threads_per_block[currentDevice]);
+	int blocksPerGrid = (total_threads + (tpb) - 1) / (tpb);\
+	Rprintf("Max: tpb = %d, simulations_per_thread = %d, blocksPerGrid = %d, minGridSize=%d, total_threads=%d\n", tpb, simulations_per_thread, blocksPerGrid, minGridSize, total_threads);\
+	tpb=threads_per_block[currentDevice];\
+	simulations_per_thread = ((total_states[currentDevice]) + n - 1) / (total_states[currentDevice]);\
+	do {\
+		total_threads = (n +simulations_per_thread) / simulations_per_thread;\
+		blocksPerGrid = (total_threads + (tpb) - 1) / (tpb);\
+		simulations_per_thread++;\
+	} while( (blocksPerGrid*tpb) >total_states[currentDevice]);\
+    simulations_per_thread--;\
+	Rprintf("Old: tpb = %d, simulations_per_thread = %d, blocksPerGrid = %d,  total_threads=%d\n", tpb, simulations_per_thread, blocksPerGrid, total_threads);
 
+	*/
 
 /******************************
  *          normal
@@ -61,8 +105,9 @@ __global__ void kernel_rnorm(curandState* state, int sims_per_thread,
 	int mystop = blockDim.x * (blockIdx.x+1) * sims_per_thread;
 	for ( int i = (blockDim.x*blockIdx.x*sims_per_thread +threadIdx.x);i<mystop;i+=blockDim.x) {
 		/* Generate pseudorandom  numbers*/
-		if(i<n)
+		if(i<n) {
 			ret[i]=NRM*param2[i % n2] + param1[i % n1];
+			}
 	}
 
 	/* Copy state back to global memory */
@@ -85,11 +130,12 @@ SEXP gpu_rnorm(SEXP in_n, SEXP in_mean, SEXP in_sd, SEXP in_n_mean, SEXP in_n_sd
 	//allocate
 	CUDA_MALLOC(ret->d_vec,n * mysizeof);
 
-	SETUP_RAND;
+
 
 	#define KERNAL(PTR,T)\
-	kernel_rnorm< T><<<blocksPerGrid, (threads_per_block[currentDevice])>>>((dev_states[currentDevice]), simulations_per_thread,\
-			PTR(mean),PTR(sd), n_mean, n_sd, n, PTR(ret));
+		SETUP_RAND(kernel_rnorm< T>);\
+		kernel_rnorm< T><<<blocksPerGrid, (tpb)>>>((dev_states[currentDevice]), simulations_per_thread,\
+				PTR(mean),PTR(sd), n_mean, n_sd, n, PTR(ret));
 	CALL_KERNAL_SF;
 	#undef KERNAL
 
@@ -149,10 +195,11 @@ SEXP gpu_dnorm(SEXP in_n, SEXP in_x, SEXP in_mean, SEXP in_sd, SEXP in_n_mean, S
 	CUDA_MALLOC(ret->d_vec,n * mysizeof);
 
 	//sims per thread must be even and two or greater
-	GET_BLOCKS_PER_GRID(n);
+
 	#define KERNAL(PTR,T)\
-	kernel_dnorm< T><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(x),\
-			PTR(mean),PTR(sd), n_mean, n_sd, n, PTR(ret), log, operations_per_thread);
+		GET_BLOCKS_PER_GRID(n,kernel_dnorm<T>);\
+		kernel_dnorm< T><<<blocksPerGrid, (tpb)>>>(PTR(x),\
+				PTR(mean),PTR(sd), n_mean, n_sd, n, PTR(ret), log, operations_per_thread);
 
 	CALL_KERNAL_SF;
 	#undef KERNAL
@@ -213,10 +260,11 @@ SEXP gpu_pnorm(SEXP in_n, SEXP in_x, SEXP in_mean, SEXP in_sd, SEXP in_n_mean, S
 	CUDA_MALLOC(ret->d_vec,n *mysizeof);
 
 	//sims per thread must be even and two or greater
-	GET_BLOCKS_PER_GRID(n);
+
 	#define KERNAL(PTR,T)\
-	kernel_pnorm< T><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(x),\
-			PTR(mean),PTR(sd), n_mean, n_sd, n, PTR(ret), log, low, operations_per_thread);
+		GET_BLOCKS_PER_GRID(n,kernel_pnorm<T>);\
+		kernel_pnorm<T><<<blocksPerGrid, (tpb)>>>(PTR(x),\
+				PTR(mean),PTR(sd), n_mean, n_sd, n, PTR(ret), log, low, operations_per_thread);
 	CALL_KERNAL_SF;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);
@@ -277,10 +325,10 @@ SEXP gpu_qnorm(SEXP in_n, SEXP in_x, SEXP in_mean, SEXP in_sd, SEXP in_n_mean, S
 	CUDA_MALLOC(ret->d_vec,n *mysizeof);
 
 	//sims per thread must be even and two or greater
-	GET_BLOCKS_PER_GRID(n);
 	#define KERNAL(PTR,T)\
-	kernel_qnorm< T><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(x),\
-			PTR(mean),PTR(sd), n_mean, n_sd, n, PTR(ret), log, low, operations_per_thread);
+		GET_BLOCKS_PER_GRID(n,kernel_qnorm<T>);\
+		kernel_qnorm< T><<<blocksPerGrid, (tpb)>>>(PTR(x),\
+				PTR(mean),PTR(sd), n_mean, n_sd, n, PTR(ret), log, low, operations_per_thread);
 	CALL_KERNAL_SF;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);
@@ -341,10 +389,11 @@ SEXP gpu_dunif(SEXP in_n, SEXP in_x, SEXP in_min, SEXP in_max, SEXP in_n_min, SE
 	CUDA_MALLOC(ret->d_vec,n *mysizeof);
 
 	//sims per thread must be even and two or greater
-	GET_BLOCKS_PER_GRID(n);
+
 	#define KERNAL(PTR,T)\
-	kernel_dunif< T><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(x),\
-			PTR(min),PTR(max), n_min, n_max, n, PTR(ret), log, operations_per_thread);
+		GET_BLOCKS_PER_GRID(n, kernel_dunif< T>);\
+		kernel_dunif< T><<<blocksPerGrid, (tpb)>>>(PTR(x),\
+				PTR(min),PTR(max), n_min, n_max, n, PTR(ret), log, operations_per_thread);
 	CALL_KERNAL_SF;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);
@@ -389,7 +438,7 @@ SEXP gpu_runif(SEXP in_n, SEXP in_min, SEXP in_max, SEXP in_n_min, SEXP in_n_max
 	CUDA_MALLOC(ret->d_vec,n *mysizeof);
 
 
-	SETUP_RAND;
+
 
 #ifdef DEBUG
 	Rprintf("simulations_per_thread=%d, blocksPerGrid=%d, n=%d, n_mean=%d, n_sd=%d",
@@ -397,7 +446,8 @@ SEXP gpu_runif(SEXP in_n, SEXP in_min, SEXP in_max, SEXP in_n_min, SEXP in_n_max
 #endif
 
 	#define KERNAL(PTR,T)\
-	kernel_runif< T><<<blocksPerGrid, (threads_per_block[currentDevice])>>>((dev_states[currentDevice]), simulations_per_thread,\
+		SETUP_RAND(kernel_runif< T>);\
+	kernel_runif< T><<<blocksPerGrid, (tpb)>>>((dev_states[currentDevice]), simulations_per_thread,\
 			PTR(min),PTR(max), n_min, n_max, n, PTR(ret));
 
 	CALL_KERNAL_SF;
@@ -501,13 +551,14 @@ SEXP gpu_rgamma(SEXP in_n, SEXP in_alpha, SEXP in_scale, SEXP in_n_alpha, SEXP i
 		PROCESS_TYPE;
 	CUDA_MALLOC(ret->d_vec,n *mysizeof);
 
-	 SETUP_RAND;
+
 #ifdef DEBUG
 	Rprintf("simulations_per_thread=%d, blocksPerGrid=%d, n=%d, n_mean=%d, n_sd=%d",
 			blocksPerGrid,n,n_alpha,n_scale);
 #endif
 	#define KERNAL(PTR,T)\
-	kernel_rgamma< T><<<blocksPerGrid, (threads_per_block[currentDevice])>>>((dev_states[currentDevice]), simulations_per_thread,\
+		 SETUP_RAND(kernel_rgamma< T>);\
+	kernel_rgamma< T><<<blocksPerGrid, (tpb)>>>((dev_states[currentDevice]), simulations_per_thread,\
 			PTR(alpha),PTR(scale), n_alpha, n_scale, n, PTR(ret));
 	CALL_KERNAL_SF;
 	#undef KERNAL
@@ -566,10 +617,11 @@ SEXP gpu_dgamma(SEXP in_n, SEXP in_x, SEXP in_parm1, SEXP in_parm2, SEXP in_n_pa
 	PROCESS_TYPE;
 	CUDA_MALLOC(ret->d_vec,n *mysizeof);
 	//sims per thread must be even and two or greater
-	GET_BLOCKS_PER_GRID(n);
+
 	#define KERNAL(PTR,T)\
-	kernel_dgamma< T><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(x),\
-			PTR(parm1),PTR(parm2), n_parm1, n_parm2, n, PTR(ret), log, operations_per_thread);
+		GET_BLOCKS_PER_GRID(n,kernel_dgamma< T>);\
+		kernel_dgamma< T><<<blocksPerGrid, (tpb)>>>(PTR(x),\
+				PTR(parm1),PTR(parm2), n_parm1, n_parm2, n, PTR(ret), log, operations_per_thread);
 	CALL_KERNAL_SF;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);
@@ -623,14 +675,15 @@ SEXP gpu_rbeta(SEXP in_n, SEXP in_alpha, SEXP in_scale, SEXP in_n_alpha, SEXP in
 		PROCESS_TYPE;
 	CUDA_MALLOC(ret->d_vec,n *mysizeof);
 
-	 SETUP_RAND
+
 #ifdef DEBUG
 	Rprintf("simulations_per_thread=%d, blocksPerGrid=%d, n=%d, n_mean=%d, n_sd=%d",
 			blocksPerGrid,n,n_alpha,n_scale);
 #endif
 	#define KERNAL(PTR,T)\
-	kernel_rbeta< T><<<blocksPerGrid, (threads_per_block[currentDevice])>>>((dev_states[currentDevice]), simulations_per_thread,\
-			PTR(alpha),PTR(scale), n_alpha, n_scale, n, PTR(ret));
+		SETUP_RAND(kernel_rbeta< T>);\
+		kernel_rbeta< T><<<blocksPerGrid, (tpb)>>>((dev_states[currentDevice]), simulations_per_thread,\
+				PTR(alpha),PTR(scale), n_alpha, n_scale, n, PTR(ret));
 
 	CALL_KERNAL_SF;
 	#undef KERNAL
@@ -727,10 +780,11 @@ SEXP gpu_dbeta(SEXP in_n, SEXP in_x, SEXP in_parm1, SEXP in_parm2, SEXP in_n_par
 	CUDA_MALLOC(ret->d_vec,n *mysizeof);
 
 	//sims per thread must be even and two or greater
-	GET_BLOCKS_PER_GRID(n);
+
 	#define KERNAL(PTR,T)\
-	kernel_dbeta< T><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(x),\
-						PTR(parm1),PTR(parm2), n_parm1, n_parm2, n, PTR(ret), log, operations_per_thread);
+		GET_BLOCKS_PER_GRID(n,kernel_dbeta< T>);\
+		kernel_dbeta< T><<<blocksPerGrid, (tpb)>>>(PTR(x),\
+							PTR(parm1),PTR(parm2), n_parm1, n_parm2, n, PTR(ret), log, operations_per_thread);
 	CALL_KERNAL_SF;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);
@@ -800,6 +854,7 @@ __device__ int
   return k;
 }
 
+
 template <typename T>
 __global__ void kernel_dbinom(T* x, T* param1, T* param2, int n1, int n2, int n,
 		T* ret, int lg, int operations_per_thread)
@@ -849,10 +904,11 @@ SEXP gpu_dbinom(SEXP in_n, SEXP in_x, SEXP in_parm1, SEXP in_parm2, SEXP in_n_pa
 	CUDA_MALLOC(ret->d_vec,n *mysizeof);
 
 	//sims per thread must be even and two or greater
-	GET_BLOCKS_PER_GRID(n);
+
 	#define KERNAL(PTR,T)\
-	kernel_dbinom< T><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(x),\
-						PTR(parm1),PTR(parm2), n_parm1, n_parm2, n, PTR(ret), log, operations_per_thread);
+		GET_BLOCKS_PER_GRID(n,kernel_dbinom< T>);\
+		kernel_dbinom< T><<<blocksPerGrid, (tpb)>>>(PTR(x),\
+							PTR(parm1),PTR(parm2), n_parm1, n_parm2, n, PTR(ret), log, operations_per_thread);
 	CALL_KERNAL_SF;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);
@@ -902,14 +958,15 @@ SEXP gpu_rbinom(SEXP in_n, SEXP in_parm1, SEXP in_parm2, SEXP in_n_parm1, SEXP i
 	PROCESS_TYPE_NO_SIZE;
 	CUDA_MALLOC(ret->d_vec,n *sizeof(int));
 
-	SETUP_RAND;
+
 #ifdef DEBUG
 	Rprintf("simulations_per_thread=%d, blocksPerGrid=%d, n=%d, n_parm1=%d, n_parm2=%d",
 			simulations_per_thread,blocksPerGrid,n,n_parm1,n_parm2);
 #endif
-		#define KERNAL(PTR,T)\
-	kernel_rbinom< T><<<blocksPerGrid, (threads_per_block[currentDevice])>>>((dev_states[currentDevice]), simulations_per_thread,\
-			PTR(parm1),PTR(parm2), n_parm1, n_parm2, n, (int *) ret->d_vec);
+	#define KERNAL(PTR,T)\
+		SETUP_RAND(kernel_rbinom< T>);\
+		kernel_rbinom< T><<<blocksPerGrid, (tpb)>>>((dev_states[currentDevice]), simulations_per_thread,\
+				PTR(parm1),PTR(parm2), n_parm1, n_parm2, n, (int *) ret->d_vec);
 	CALL_KERNAL_SF;
 	#undef KERNAL
 	CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);
@@ -928,49 +985,6 @@ SEXP gpu_rbinom(SEXP in_n, SEXP in_parm1, SEXP in_parm2, SEXP in_n_parm1, SEXP i
 /******************************
  *          poisson
  ******************************/
-
-
-
-/* modified from the GSL library which uses the Knuth method
- */
-template <typename T>
-__device__ int
-rpois(curandState *state,  T mu)
-{
-        T emu;
-        T prod = 1.0;
-        int k = 0;
-
-        while (mu > 10.0)
-        {
-                int m = mu * (7.0 / 8.0);
-
-                T X = rgamma<T>(state, (T) m, 1.0);//gsl_ran_gamma_int (r, m);
-
-                if (X >= mu) {
-                        return k + rbinom<T>(state, m -1 , mu/X);//gsl_ran_binomial (r, mu / X, m - 1);
-                } else {
-                        k += m;
-                        mu -= X;
-                }
-        }
-
-        /* This following method works well when mu is small */
-        __syncthreads();//little scared of this but...
-        emu = exp (-mu);
-
-        do
-        {
-                prod *=  UNI2; //gsl_rng_uniform (r);
-                k++;
-        }
-        while (prod > emu);
-
-        return k - 1;
-
-}
-
-
 
 
 template <typename T>
@@ -1018,10 +1032,11 @@ SEXP gpu_dpois(SEXP in_n, SEXP in_x, SEXP in_parm1, SEXP in_n_parm1,
 	CUDA_MALLOC(ret->d_vec,n *mysizeof);
 
 	//sims per thread must be even and two or greater
-	GET_BLOCKS_PER_GRID(n);
+
 	#define KERNAL(PTR,T)\
-	kernel_dpois< T><<<blocksPerGrid, (threads_per_block[currentDevice])>>>(PTR(x),\
-			PTR(parm1), n_parm1,  n, PTR(ret), log, operations_per_thread);
+		GET_BLOCKS_PER_GRID(n, kernel_dpois< T>);\
+		kernel_dpois< T><<<blocksPerGrid, (tpb)>>>(PTR(x),\
+				PTR(parm1), n_parm1,  n, PTR(ret), log, operations_per_thread);
 	cudaStat = cudaDeviceSynchronize();
 	CALL_KERNAL_SF;
 	#undef KERNAL
@@ -1045,10 +1060,11 @@ __global__ void kernel_rpois(curandState* state, int sims_per_thread,
 		if(i<n) {
 
 			T mu= param1[i % n1];
-			if(mu<0)
-				ret[i]=INT_MIN;
+			if(mu<=0)
+				ret[i]=0;
 			else
-				ret[i]= rpois<T>(&localState, param1[i % n1]);
+				ret[i]= curand_poisson(&localState, mu);
+				//			 __device__ unsigned int curand_poisson (curandState_t *state, double lambda)
 		}
 	}
 	/* Copy state back to global memory */
@@ -1072,13 +1088,9 @@ SEXP gpu_rpois(SEXP in_n, SEXP in_parm1,  SEXP in_n_parm1, SEXP in_type)
 	CUDA_MALLOC(ret->d_vec,n *sizeof(int));
 
 
-	SETUP_RAND;
-#ifdef DEBUG
-	Rprintf("simulations_per_thread=%d, blocksPerGrid=%d, n=%d, n_parm1=%d, n_parm2=%d",
-			simulations_per_thread,blocksPerGrid,n,n_parm1,n_parm2);
-#endif
 	#define KERNAL(PTR,T)\
-	kernel_rpois< T><<<blocksPerGrid, (threads_per_block[currentDevice])>>>((dev_states[currentDevice]), simulations_per_thread,\
+		SETUP_RAND(kernel_rpois< T>);\
+		kernel_rpois< T><<<blocksPerGrid, (tpb)>>>((dev_states[currentDevice]), simulations_per_thread,\
 			PTR(parm1), n_parm1, n, (int *) ret->d_vec);
 	CALL_KERNAL_SF;
 	#undef KERNAL
@@ -1141,13 +1153,14 @@ SEXP gpu_rsample(SEXP in_P, SEXP in_rows, SEXP in_cols, SEXP in_norm, SEXP in_ty
 	CUDA_MALLOC(ret->d_vec,rows *sizeof(int));
 
 	int n=rows;//number of values to be simulated
-	SETUP_RAND;
+
 #ifdef DEBUG
 	Rprintf("simulations_per_thread=%d, blocksPerGrid=%d, n=%d, n_parm1=%d, n_parm2=%d",
 			simulations_per_thread,blocksPerGrid,n,n_parm1,n_parm2);
 #endif
 	#define KERNAL(PTR,T)\
-		kernel_rsample< T><<<blocksPerGrid, (threads_per_block[currentDevice])>>>((dev_states[currentDevice]), simulations_per_thread,\
+		SETUP_RAND(kernel_rsample< T>);\
+		kernel_rsample< T><<<blocksPerGrid, (tpb)>>>((dev_states[currentDevice]), simulations_per_thread,\
 			PTR(P), PTR(norm), rows, cols, (int *) ret->d_vec);
 	CALL_KERNAL_SF;
 	#undef KERNAL

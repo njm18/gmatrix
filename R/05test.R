@@ -182,7 +182,7 @@ gtest =function() {
 	for(op in multOps) {	
 	#	browser()
 		#suppressWarnings(setGeneric("%op%",op[[2]],where=globalenv()))
-		
+		#print(op)
 		opname=op[[1]]
 		opf=op[[2]]
 		for(i in 1:4){
@@ -796,5 +796,5 @@ gtest =function() {
 		}
 	}
 	
-	return(TRUE)
+	invisible(TRUE)
 }

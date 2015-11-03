@@ -75,21 +75,24 @@ SEXP gpu_convert(SEXP A_in, SEXP in_N, SEXP in_type, SEXP in_to_type )
 //	Rprintf("length = %d\n", n);
 //#endif
 	CUDA_MALLOC( my_gpuvec->d_vec, N*to_mysizeof );
-	GET_BLOCKS_PER_GRID(N);
 
+		
 	if(to_type==0) {
 		#define KERNAL(PTR,T)\
-		kernal_convert<double, T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>((double *) (my_gpuvec->d_vec), PTR(A), N, operations_per_thread);
+		GET_BLOCKS_PER_GRID(N, (kernal_convert<double, T >));\
+		kernal_convert<double, T ><<<blocksPerGrid, (tpb)>>>((double *) (my_gpuvec->d_vec), PTR(A), N, operations_per_thread);
 		CALL_KERNAL;
 		#undef KERNAL
 	} else if(to_type==1) {
 		#define KERNAL(PTR,T)\
-		kernal_convert<float, T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>((float *) (my_gpuvec->d_vec), PTR(A), N, operations_per_thread);
+		GET_BLOCKS_PER_GRID(N, (kernal_convert<float, T >));\
+		kernal_convert<float, T ><<<blocksPerGrid, (tpb)>>>((float *) (my_gpuvec->d_vec), PTR(A), N, operations_per_thread);
 		CALL_KERNAL;
 		#undef KERNAL
 	} else {
 		#define KERNAL(PTR,T)\
-		kernal_convert<int, T ><<<blocksPerGrid, (threads_per_block[currentDevice])>>>((int *) (my_gpuvec->d_vec), PTR(A), N, operations_per_thread);
+		GET_BLOCKS_PER_GRID(N, (kernal_convert<int, T >));\
+		kernal_convert<int, T ><<<blocksPerGrid, (tpb)>>>((int *) (my_gpuvec->d_vec), PTR(A), N, operations_per_thread);
 		CALL_KERNAL;
 		#undef KERNAL
 	}
