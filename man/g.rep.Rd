@@ -7,7 +7,7 @@ Replicate Elements of a vector or gvector,
 \code{g.rep} replicates the 'vector' or \code{gvector}.
 }
 \usage{
-g.rep(x, times = 1L, each = NULL, type = NULL)
+g.rep(x, times = 1L, each = 1L, type = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

@@ -176,18 +176,30 @@ SEXP setup_curand(SEXP in_total_states, SEXP in_seed, SEXP in_silent, SEXP in_fo
 	return in_total_states;
 }
 
-void startCublas(int* silent) { // must be called with .C interface
+SEXP cudaVersion() {
+	int myint = CUDART_VERSION;
+	return(asSEXPint(myint));
+}
+void startCublas(int* silent) { // must be called with .C interface - also starts cusolve
 	cublasStatus_t status1;
 	if(dev_cublas_set[currentDevice]==0) {
 		if(silent[0]==0)
 			Rprintf("Starting cublas on device %d.\n", currentDevice);
 		status1 = cublasCreate(&(handle[currentDevice]));
 		if (status1 != CUBLAS_STATUS_SUCCESS) {
-			error("CUBLAS initialization error\n");
+			error("CUBLAS initialization error.\n");
 		}
+		#if CUDART_VERSION >= 7000
+		cusolverStatus_t s  = cusolverDnCreate(&(cudshandle[currentDevice]));
+		if(s != CUSOLVER_STATUS_SUCCESS)
+			error("CUSOLVER initialization error.\n");
+		#endif
 		dev_cublas_set[currentDevice]=1;
+
 	}
 }
+
+
 
 void stopCublas(int* silent) {
 	cublasStatus_t status1;
@@ -199,6 +211,11 @@ void stopCublas(int* silent) {
 		if (status1 != CUBLAS_STATUS_SUCCESS) {
 			warning("CUBLAS shutdown error\n");
 		}
+		#if CUDART_VERSION >= 7000
+		cusolverStatus_t s = cusolverDnDestroy((cudshandle[currentDevice]));
+		if(s != CUSOLVER_STATUS_SUCCESS)
+			error("CUSOLVER shutdown error.\n");
+		#endif
 	}
 }
 

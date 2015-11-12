@@ -707,7 +707,6 @@ gtest =function() {
 	#uniform
 	mycheck(sapply(c(.01, .5, 1, 5, 10), function(min) {
 						tmp = lapply(c(.01, .5, 1, 5, 10)+10, function(max) {
-									#cat(min,max,"\n");
 									dosimcont(
 											qdistfun=function(q) qunif(q,min,max),
 											rdistfun=function(n) grunif(n,min,max)
@@ -775,8 +774,56 @@ gtest =function() {
 			pnorm(((-10):10)/2, mean=c(1,2), sd=c(1,2,3,4), log.p=TRUE), "gpnorm")
 	checkd( gpnorm(((-10):10)/2, mean=c(1,2), sd=c(1,2,3,4),warn=FALSE),
 			pnorm(((-10):10)/2, mean=c(1,2), sd=c(1,2,3,4)), "gpnorm")
-	
+			
+			
 
+	if(.Call("cudaVersion")>=7000L) {
+		cat("Checking qr functions...\n")
+		checkD=function(x1,y1, funnm) {
+			yexpr=substitute(y1)
+			xexpr=substitute(x1)
+			tmpnm=deparse(expr=xexpr)
+			mywarnings=character(0)
+
+			x=tryCatch(eval(xexpr), error=function(e) {
+			mywarnings<<-conditionMessage(e)
+			return(-99999L)})
+
+			if(as.logical(x[1]!=-99999L)) {
+				y=eval(yexpr)
+				tmp=sum((y-x)^2)/sum(x^2)
+
+				if(!is.numeric(tmp)||any(is.na(tmp)))
+					mywarnings=c(mywarnings,paste(funnm, ":result missing or not numeric."))
+				else if(tmp>10^(-6))
+					mywarnings=c(mywarnings,paste(funnm, ":result not equal to host value."))
+			}
+			warningslist<<-c(warningslist,mywarnings)
+		}
+
+		#SVD
+		hm=matrix(rnorm(10^2*2),20,10)
+		gdm=g(hm)
+		gsm=g(hm, type="s")
+		checkD(svd(hm)$d, h(svd(gdm)@S), "svd double")
+		checkD(svd(hm)$d, h(svd(gsm)@S), "svd single")
+
+		#QR
+		hb=matrix(rnorm(4),20,2)
+		gdb=g(hb)
+		gsb=g(hb, type="s")
+		hcoefqr = qr.coef(qr(hm)   ,hb) 
+		checkD(hcoefqr, h(gqr.coef(qr(gdm),gdb)) , "qr/gqr.coef double")
+		checkD(hcoefqr, h(gqr.coef(qr(gsm),gsb)) , "qr/gqr.coef single")
+		checkD(hcoefqr, h(gqr.coef(qr(gdm),hb))  , "qr/gqr.coef double / host")
+
+		#QR
+		hm =t(hm) %*% hm
+		gdm=g(hm)
+		gsm=g(hm, type="s")
+		checkD(chol(hm), h(chol(gdm)), "chol double")
+		checkD(chol(hm), h(chol(gsm)), "chol single")	
+	}
 	
 	if(length(warningslist)==0)
 		cat("No errors or warnings\n")

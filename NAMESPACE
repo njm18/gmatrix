@@ -3,7 +3,7 @@ useDynLib(gmatrix, .registration=TRUE)
 exportPattern("^[^\\.]")
 
 
-exportClasses("gmatrix", "gvector")
+exportClasses("gmatrix", "gvector", "gqr", "gsvd")
 importFrom("methods",getMethod)
 
 exportMethods(
@@ -68,7 +68,12 @@ exportMethods(
 	'is.na',
 	'is.nan',
 	'is.finite',
-	'is.infinite')
+	'is.infinite',
+	'qr',
+    'gqr.coef',
+    'solve',
+	'svd',
+	'chol')
 
 
 

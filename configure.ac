@@ -31,7 +31,7 @@ AC_MSG_RESULT([setting compute capability of the target device to ${ARCH}])
 NCFLAGS="-arch=${ARCH} -O2 -DADD_"
 CUDA_INC=${CUDA_HOME}/include
 AC_MSG_CHECKING([for CUDA headers])
-AC_CHECK_FILE([${CUDA_INC}/cublas.h],
+AC_CHECK_FILE([${CUDA_INC}/cublas_v2.h],
 	[NCFLAGS="${NCFLAGS} -I${CUDA_INC}"],
 	[AC_MSG_ERROR([CUDA headers not found!])]
 )
@@ -44,7 +44,15 @@ else
 	LDFLAGS="-L${CUDA_HOME}/lib"
 fi
 
-LIBS="-lcudart -lcublas"
+AC_MSG_CHECKING([whether cusolver is used])
+AC_CHECK_FILE([${CUDA_INC}/cusolverDn.h], [check_cusolve=T])
+if test "${check_cusolve}" == "T"; then
+	LIBS="-lcudart -lcublas -lcusolver"
+else
+	LIBS="-lcudart -lcublas"
+fi
+
+
 
 
 #################### R Software ####################

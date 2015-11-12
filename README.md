@@ -15,10 +15,12 @@ Installation Instructions
 install.packages("gmatrix")
 ```
 
-Alternatively, if you would like to install the developmental version, the following command may be used:
+Alternatively, if you would like to install the developmental version, the following from the linux command line may be used:
 
-    install.packages("devtools")
-    devtools::install_github("njm18/gmatrix")
+	git clone https://github.com/njm18/gmatrix.git
+	MAKE="make -j7" #note this make the compile process use 7 threads 
+	R CMD build gmatrix
+	R CMD INSTALL gmatrix_0.3.tar.gz --no-test-load --configure-args="--with-arch=sm_50"
 
 	 
 Installation Note

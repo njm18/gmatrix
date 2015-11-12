@@ -99,12 +99,14 @@ Objects should NOT be created by calls of the form \code{new("gmatrix", ...)}. I
     \item{[}{\code{signature(x = "gmatrix", i = "numeric", j = "gvector")}: indexing  }
     \item{[}{\code{signature(x = "gmatrix", i = "numeric", j = "missing")}: indexing  }
     \item{[}{\code{signature(x = "gmatrix", i = "numeric", j = "numeric")}: indexing }
+	\item{[}{\code{signature(x = "gmatrix", i = "missing", j = "missing", k = "missing")}: indexing  }
     \item{[<-}{\code{signature(x = "gmatrix", i = "gvector", j = "gvector")}: indexing  }
     \item{[<-}{\code{signature(x = "gmatrix", i = "gvector", j = "missing")}: indexing  }
     \item{[<-}{\code{signature(x = "gmatrix", i = "gvector", j = "numeric")}: indexing . }
     \item{[<-}{\code{signature(x = "gmatrix", i = "numeric", j = "gvector")}: indexing  }
     \item{[<-}{\code{signature(x = "gmatrix", i = "numeric", j = "missing")}: indexing  }
     \item{[<-}{\code{signature(x = "gmatrix", i = "numeric", j = "numeric")}: indexing  }
+	\item{[<-}{\code{signature(x = "gmatrix", i = "missing", j = "missing", k = "missing")}: indexing  }
     \item{^}{\code{signature(e1 = "gmatrix", e2 = "gmatrix")}: power operator }
     \item{^}{\code{signature(e1 = "gmatrix", e2 = "gvector")}: power operator}
     \item{^}{\code{signature(e1 = "gmatrix", e2 = "logical")}: power operator }
@@ -263,6 +265,7 @@ Objects should NOT be created by calls of the form \code{new("gmatrix", ...)}. I
     \item{tanh}{\code{signature(x = "gmatrix")}: hyperbolic tangent }
     \item{type}{\code{signature(x = "gmatrix")}: get type (e.g \code{"double"}) }
     \item{type<-}{\code{signature(x = "gmatrix")}: set type }
+    \item{solve}{\code{signature(a = "gmatrix", b="ANY")}: set type }
 	 }
 }
 

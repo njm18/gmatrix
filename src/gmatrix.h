@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <cublas_v2.h>
 #include <curand_kernel.h>
-
+#include <cusolverDn.h>
 
 #include <thrust/reduce.h>
 #include <thrust/functional.h>
@@ -266,6 +266,7 @@ GLOBAL __device__ int CUDA_R_Na_int;
 GLOBAL __device__ double CUDA_R_Na_double;
 GLOBAL __device__ float CUDA_R_Na_float;
 GLOBAL cublasHandle_t handle[MAX_DEVICE];
+GLOBAL cusolverDnHandle_t  cudshandle[MAX_DEVICE];
 GLOBAL int total_states[MAX_DEVICE] ;
 GLOBAL curandState* dev_states[MAX_DEVICE];
 GLOBAL int threads_per_block[MAX_DEVICE] ;
@@ -446,6 +447,14 @@ SEXP gpu_kernal_sumby(SEXP A_in, SEXP index1_in,SEXP index2_in,SEXP n_A_in,SEXP 
 SEXP gpu_kronecker(SEXP A_in, SEXP B_in,SEXP n_A_row_in,SEXP n_A_col_in, SEXP n_B_row_in,SEXP n_B_col_in, SEXP in_type);
 SEXP gpu_mat_times_diag_vec(SEXP A_in, SEXP B_in, SEXP n_row_in, SEXP n_col_in, SEXP in_type);
 
+SEXP rcusolve_qr(SEXP A_in, SEXP qraux_in);
+SEXP rcusolve_modqr_coef(SEXP qr_in, SEXP qraux_in, SEXP B_in);
+SEXP rcusolve_svd(SEXP A_in,SEXP  S_in, SEXP U_in,SEXP  VT_in);
+SEXP rcusolve_chol(SEXP A_in);
+
+//SEXP rcula_eigen_symm(SEXP A_in, SEXP val_in);
+//SEXP rcusolve_dgesv(SEXP A_in, SEXP B_in);
+//SEXP check_inverse_condition(SEXP Ain, SEXP Avalsin, SEXP permin, SEXP tolin) ;
 
 //simple binary operations
 #define BINARYOPDEF(MNAME) \
@@ -543,8 +552,8 @@ SEXP gpu_isfinite(SEXP y, SEXP sn, SEXP in_type);
 SEXP gpu_isinfinite(SEXP y, SEXP sn, SEXP in_type);
 
 //gfunction
-SEXP gpu_gfunction_call(SEXP args_in, SEXP each_arg_len_in, SEXP fid_in, SEXP varid_in, SEXP outlen_in, SEXP in_type);
-
+//SEXP gpu_gfunction_call(SEXP args_in, SEXP each_arg_len_in, SEXP fid_in, SEXP varid_in, SEXP outlen_in, SEXP in_type);
+SEXP cudaVersion();
 
 
 

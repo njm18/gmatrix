@@ -1,12 +1,12 @@
 #!/bin/sh
-# This copied from
+# This script was modified  from
 # the 'magma' R package by Brian Smith which is licensed by
 # under GNU GPL 3 or later.
 
 # Cleans up after the auxiliary files that were created when installing
-# the magma package
+# the gmatrix package
 #
-echo "Cleaning up after installing the magma package"
+echo "Cleaning up after installing the gmatrix package"
 
 for f in config.log config.status config.cache ; do
   if test -w $f ; then
