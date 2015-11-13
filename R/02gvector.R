@@ -457,7 +457,7 @@ setMethod("[", "gvector",
                                         length=length(i), type=x@type)
 
                         if(!is.null(names(x)))
-                                names(ret)=names(x)[i]
+                                names(ret)=names(x)[as.integer(i)]
 
                         return(ret)
                 }

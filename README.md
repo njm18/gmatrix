@@ -44,7 +44,7 @@ install.packages("gmatrix" ,
 	    
 Testing the Installation
 -------------------------
-We recoment that the user test the installation using the following commands:
+We recomend that the user test the installation using the following commands:
 
     library(gmatrix)
     gtest()

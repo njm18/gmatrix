@@ -394,13 +394,13 @@ setReplaceMethod("diag", "gmatrix",
 #	} else
 #		return(FALSE)
 #}
-.check_make_valid =function(i, size, nmx, set=FALSE) {
+.check_make_valid =function(i, size, nmx, chk=FALSE) {
 	if(is.vector(i) ) {
 		if(is.logical(i) )
 			i=as.gvector(which(i), type=2L)
-		else if(is.character(i))
+		else if(is.character(i)) {
 			i=as.gvector(match(i,nmx), type=2L)
-		else if(min(i,  na.rm = TRUE)<1)
+		} else if(min(i,  na.rm = TRUE)<1)
 			i=as.gvector((1:size)[i], type=2L)
 		else
 			i=as.gvector(i, type=2L)
@@ -416,7 +416,7 @@ setReplaceMethod("diag", "gmatrix",
 			i=as.gvector(i, type=2L, dup=FALSE) 
 	} else
 		stop("Gpu based indexing can only be performed with an index of class 'vector' or 'gvector'.")
-	if(set) {
+	if(chk) {
 		maxi=max(i, retgpu=FALSE)
 		mini=min(i, retgpu=FALSE)
 		if(is.finite(maxi) && is.finite(mini)) {
@@ -431,8 +431,8 @@ setReplaceMethod("diag", "gmatrix",
 .twoindex=	function(x, i, j, ..., drop=TRUE) {
 	checkDevice(x@device)
 	
-	j=.check_make_valid(j,ncol(x),names(x))
-	i=.check_make_valid(i,nrow(x),names(x))
+	j=.check_make_valid(j,ncol(x),colnames(x),TRUE)
+	i=.check_make_valid(i,nrow(x),rownames(x),TRUE)
 	#browser()
 	#SEXP gpu_gmatrix_index_both(SEXP A_in, SEXP n_row_A_in, SEXP n_col_A_in,
 	#		SEXP index_row_in, SEXP n_index_row_in,SEXP index_col_in, SEXP n_index_col_in)
@@ -443,9 +443,9 @@ setReplaceMethod("diag", "gmatrix",
 	
 	
 	if(!is.null(rownames(x)))
-		rownames(ret)=rownames(x)[i]
+		rownames(ret)=rownames(x)[as.integer(i)]
 	if(!is.null(colnames(x)))
-		colnames(ret)=colnames(x)
+		colnames(ret)=colnames(x)[as.integer(j)]
 	if(drop) {
 		if(nrow(ret)==1)
 			ret=new("gvector",ptr=ret@ptr, length=ncol(ret), names=colnames(ret), type=ret@type)
@@ -459,15 +459,15 @@ setReplaceMethod("diag", "gmatrix",
 .colindex=	function(x, i, j, ..., drop=TRUE) {
 	checkDevice(x@device)
 	
-	j=.check_make_valid(j,ncol(x),names(x))
+	j=.check_make_valid(j,ncol(x),colnames(x), TRUE)
 	ret=new("gmatrix", 
 			ptr=.Call("gpu_gmatrix_index_col", x@ptr, nrow(x), ncol(x), j@ptr, length(j),  x@type),
 			nrow=nrow(x), ncol=length(j), type=x@type)
-	
+	#browser()
 	if(!is.null(rownames(x)))
-		rownames(ret)=rownames(x)[i]
+		rownames(ret)=rownames(x)
 	if(!is.null(colnames(x)))
-		colnames(ret)=colnames(x)
+		colnames(ret)=colnames(x)[as.integer(j)]
 	if(drop) {
 		if(nrow(ret)==1)
 			ret=new("gvector",ptr=ret@ptr, length=ncol(ret), names=colnames(ret), type=ret@type)
@@ -485,13 +485,13 @@ setReplaceMethod("diag", "gmatrix",
 	if(nargs() == 2) { ## e.g. M[0] , M[TRUE],  M[1:2]
 		return(.oneindex(x, i))
 	} else {
-		i=.check_make_valid(i,nrow(x),names(x))
+		i=.check_make_valid(i,nrow(x),rownames(x),TRUE)
 		ret=new("gmatrix", 
 				ptr=.Call("gpu_gmatrix_index_row", x@ptr, nrow(x), ncol(x), i@ptr, length(i), x@type),
 				nrow=length(i), ncol=ncol(x),type= x@type)
 		
 		if(!is.null(rownames(x)))
-			rownames(ret)=rownames(x)[i]
+			rownames(ret)=rownames(x)[as.integer(i)]
 		if(!is.null(colnames(x)))
 			colnames(ret)=colnames(x)
 		if(drop) {
@@ -559,20 +559,23 @@ setReplaceMethod("diag", "gmatrix",
 
 .oneindex=function(x, i) {
 	checkDevice(x@device)
+	if(is.character(i))
+		stop("Index for this operation cannot be a character vector.")
 	i=.check_make_valid(i,length(x),names(x))
 	ret=new("gvector", 
 			ptr=.Call("gpu_numeric_index", x@ptr, length(x), i@ptr, length(i), x@type),
 			length=length(i),type= x@type)
 	
 	if(!is.null(names(x)))
-		names(ret)=names(x)[i]
+		names(ret)=names(x)[as.integer(i)]
 	
 	return(ret)
 }
 
 .setoneindex=function(x, i, value) {
 	
-	
+	if(is.character(i))
+		stop("Index for this operation cannot be a character vector.")
 	if(!(class(value) %in% c("gvector","gmatrix")))
 		value=as.gvector(value, type=x@type)
 	i=.check_make_valid(i,length(x),names(x), TRUE)
