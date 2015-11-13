@@ -156,8 +156,10 @@ gtest =function() {
 				y=h(y)
 			}
 			tmp=sum((y-x)^2)/sum(x^2)
-			if(tmp>10^-6)
-				mywarnings=c(mywarnings,"not equal")
+			if(!is.numeric(tmp)||any(is.na(tmp)))
+					mywarnings=c(mywarnings,paste(mywarnings, "result missing or not numeric."))
+			else if(tmp>10^(-6))
+					mywarnings=c(mywarnings,"not equal")
 		}
 		if(length(mywarnings)>0) {
 			c1=ifelse(gpu1,paste(ifelse(mat1,"gmatrix","gvector"),"of type",.type_name(type1)),
@@ -778,7 +780,7 @@ gtest =function() {
 			
 
 	if(.Call("cudaVersion")>=7000L) {
-		cat("Checking qr functions...\n")
+		cat("Checking solver functions...\n")
 		checkD=function(x1,y1, funnm) {
 			yexpr=substitute(y1)
 			xexpr=substitute(x1)
