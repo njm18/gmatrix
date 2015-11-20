@@ -3,7 +3,7 @@ useDynLib(gmatrix, .registration=TRUE)
 exportPattern("^[^\\.]")
 
 
-exportClasses("gmatrix", "gvector", "gqr", "gsvd")
+exportClasses("gmatrix", "gvector", "gqr", "gsvd", "lpgr")
 importFrom("methods",getMethod)
 
 exportMethods(

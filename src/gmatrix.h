@@ -437,7 +437,7 @@ SEXP gpu_order(SEXP A_in, SEXP n_in, SEXP stable_in, SEXP decreasing_in, SEXP in
 SEXP gpu_which(SEXP A_in, SEXP n_in);
 SEXP gpu_seq( SEXP n_in, SEXP init_in, SEXP step_in, SEXP in_type  );
 SEXP gpu_if(SEXP H_in, SEXP A_in, SEXP B_in,SEXP snh, SEXP sna, SEXP snb, SEXP in_type);
-SEXP gpu_rowLogSums(SEXP in_P, SEXP in_rows, SEXP in_cols, SEXP in_type);
+SEXP gpu_rowLogSums(SEXP in_P, SEXP in_rows, SEXP in_endCol, SEXP in_startCol, SEXP in_type);
 
 //matrix multiplications
 SEXP matrix_multiply(SEXP A_in, SEXP B_in, SEXP transa, SEXP transb, SEXP in_type);//ordinary matrix multiplication

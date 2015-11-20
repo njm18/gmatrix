@@ -416,6 +416,8 @@ setReplaceMethod("diag", "gmatrix",
 			i=as.gvector(i, type=2L, dup=FALSE) 
 	} else
 		stop("Gpu based indexing can only be performed with an index of class 'vector' or 'gvector'.")
+	if(length(i)<1)
+		stop("Index on gpu must select at least one thing.")
 	if(chk) {
 		maxi=max(i, retgpu=FALSE)
 		mini=min(i, retgpu=FALSE)

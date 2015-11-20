@@ -570,14 +570,22 @@ setMethod("rowSums",  "gmatrix",
 		}
 )
 
-rowLogSums = function(x) {
+rowLogSums = function(x, startCol=1L, endCol=ncol(x)) {
 	
 	if(class(x)!="gmatrix")
 		stop("Object must be of class 'gmatrix.'")
 	if(x@type>1L)
 		stop("Invalid type")
+	startCol=as.integer(startCol)
+    endCol=as.integer(endCol)	
+	if(startCol<1L || startCol>ncol(x) || startCol>endCol)
+		stop("Invalid startCol.")
+	if(endCol<1L || endCol>ncol(x) )
+		stop("Invalid endCol.")
+		
 	checkDevice(x@device)
-	ret = new("gvector", ptr=.Call("gpu_rowLogSums", ptr=x@ptr, nrow(x), ncol(x), x@type),
+	ret = new("gvector", ptr=.Call("gpu_rowLogSums", ptr=x@ptr,
+			nrow(x), endCol, startCol, x@type),
 			length=nrow(x),type=x@type)
 	return(ret)
 }

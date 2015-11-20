@@ -1433,24 +1433,38 @@ __global__ void kernal_rowLogSums(T* P, T* ret, int rows, int cols, int operatio
 	}
 
 }
-SEXP gpu_rowLogSums(SEXP in_P, SEXP in_rows, SEXP in_cols, SEXP in_type)
+
+SEXP gpu_rowLogSums(SEXP in_P, SEXP in_rows, SEXP in_endCol, SEXP in_startCol, SEXP in_type)
 {
 
 	struct gpuvec *ret = Calloc(1, struct gpuvec);
 	struct gpuvec *P = (struct gpuvec*) R_ExternalPtrAddr(in_P);
 	int rows = INTEGER(in_rows)[0];
-	int cols = INTEGER(in_cols)[0];
+	
+	int endCol = INTEGER(in_endCol)[0];
+	int startCol = INTEGER(in_startCol)[0];
+	int cols = endCol - startCol + 1;
 
+		
+	
 	DECERROR1;
 	//allocate
 	PROCESS_TYPE;
+
+    //point to start of row
+	struct gpuvec *Pstart = Calloc(1, struct gpuvec);
+	if(type==0) {
+		Pstart->d_vec = (void *) &( ((double *) P->d_vec)[(startCol-1)*rows] );
+	} else if(type==1) {\
+		Pstart->d_vec = (void *) &( ((float *) P->d_vec)[(startCol-1)*rows] );
+	}
 	CUDA_MALLOC(ret->d_vec,rows * mysizeof) ;
 
-
+    
 	//kernal_mat_times_diag_vec(double* x, double* y, double* ret, int n_row_x, int n, int operations_per_thread)
 	#define KERNAL(PTR,T)\
 		GET_BLOCKS_PER_GRID(rows, kernal_rowLogSums < T >);\
-		kernal_rowLogSums< T ><<<blocksPerGrid, (tpb)>>>(PTR(P),PTR(ret),\
+		kernal_rowLogSums< T ><<<blocksPerGrid, (tpb)>>>(PTR(Pstart),PTR(ret),\
 				rows, cols, operations_per_thread);
 	CALL_KERNAL_SF;
 	#undef KERNAL
