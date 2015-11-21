@@ -124,7 +124,7 @@ setDevice = function(device,force=FALSE,silent=FALSE,...) {
 	if(tmp[[2]]==1L) {#not sure why but sometimes cublas give error first time round... jerry riggin' it
 	    x= g(matrix(0, 2, 2))
 		y=  g(matrix(c(1, 1)))
-		tmp=tryCatch( .Call("matrix_multiply", a1, b1, FALSE, FALSE, x@type) , error = function(e) return("ERR")) 
+		tmp=tryCatch( .Call("matrix_multiply", x, y, FALSE, FALSE, x@type) , error = function(e) return("ERR")) 
 	}
 
 }
