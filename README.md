@@ -3,11 +3,11 @@ The "gmatrix" Package
 
 This package implements a general framework for utilizing R to harness the power of NVIDIA GPU's. The "gmatrix" and "gvector" classes allow for easy management of the separate device and host memory spaces. Numerous numerical operations are implemented for these objects on the GPU. These operations include matrix multiplication, addition, subtraction, the kronecker product, the outer product, comparison operators, logical operators, trigonometric functions, indexing, sorting, random number generation and many more.
 The "gmatrix" package has only been tested and compiled for linux machines. It would certainly be nice of someone to get it working in Windows. Until then, Windows is not supported. 
-In addition we assume that the divice is at least of NVIDIA(R) compute capibility 2.0, so this package may not work with older devices. There is a companion package [rcula](https://github.com/njm18/rcula/tree/master/rcula) which allows the user to perform eigen decomposition and solve linear equations.
+In addition we assume that the divice is at least of NVIDIA(R) compute capibility 2.0, so this package may not work with older devices.
 
 Installation Instructions
 -------------------------
-1. Install the the CUDA Toolkit. The current version of 'gmatix' has been tested for CUDA Toolkit 5.0. 
+1. Install the the CUDA Toolkit. The current version of 'gmatix' has been tested for CUDA Toolkit 5.0 and 7.0. 
 2. Install R. The current version of 'gmatrix' has been tested under R 3.0.2.
 3. Start R and then install the 'gmatrix' package with the following commands. Package compilation may take 5-10 minutes.
 
