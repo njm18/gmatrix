@@ -50,7 +50,7 @@ __device__ T cuda_rnrm(curandState *state) {
 	int simulations_per_thread = ((total_states[currentDevice]) + n - 1) / (total_states[currentDevice]);\
 	do {\
 		int total_threads = (n +simulations_per_thread) / simulations_per_thread;\
-		int blocksPerGrid = (total_threads + (tpb) - 1) / (tpb);\
+		blocksPerGrid = (total_threads + (tpb) - 1) / (tpb);\
 		simulations_per_thread++;\
 	} while( (blocksPerGrid*tpb) >total_states[currentDevice]);\
     simulations_per_thread--;
