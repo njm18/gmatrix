@@ -47,6 +47,7 @@ struct gvec get_gvec_struct(SEXP A_in) {
 }
 
 #if CUDART_VERSION >= 7000
+
 void check_error(cusolverStatus_t s) {
 	if(s!=CUSOLVER_STATUS_SUCCESS) {
 		if(s==CUSOLVER_STATUS_NOT_INITIALIZED)

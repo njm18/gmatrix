@@ -16,7 +16,7 @@
 #include <cublas_v2.h>
 #include <curand_kernel.h>
 
-#if CUDART_VERSION < 7000
+#if CUDART_VERSION >= 7000
 #include <cusolverDn.h>
 #endif
 
