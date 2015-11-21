@@ -269,7 +269,7 @@ GLOBAL __device__ int CUDA_R_Na_int;
 GLOBAL __device__ double CUDA_R_Na_double;
 GLOBAL __device__ float CUDA_R_Na_float;
 GLOBAL cublasHandle_t handle[MAX_DEVICE];
-#if CUDART_VERSION < 7000
+#if CUDART_VERSION >= 7000
 GLOBAL cusolverDnHandle_t  cudshandle[MAX_DEVICE];
 #endif
 
