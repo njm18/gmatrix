@@ -120,10 +120,13 @@ setDevice = function(device,force=FALSE,silent=FALSE,...) {
 #	tmp = .C("setFlagSpin")
     myset=integer(1)
 	tmp=.C("startCublas", as.logical(silent), myset)
-	if(myset) {
-		tmp=tryCatch( g( matrix(0,2,2)) %*% g(c(1,1))  , error = function(e) return("ERR")) #not sure why but sometimes cublas give error first time round... jerrie riggin' it
-	}
 	setTuningPameters(force=force, ...)
+	if(tmp[[2]]==1L) {#not sure why but sometimes cublas give error first time round... jerry riggin' it
+	    x= g(matrix(0, 2, 2))
+		y=  g(matrix(c(1, 1)))
+		tmp=tryCatch( .Call("matrix_multiply", a1, b1, FALSE, FALSE, x@type) , error = function(e) return("ERR")) 
+	}
+
 }
 
 
