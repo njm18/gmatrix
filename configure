@@ -2579,9 +2579,9 @@ NCFLAGS="-arch=${ARCH} -O2 -DADD_"
 CUDA_INC=${CUDA_HOME}/include
 { $as_echo "$as_me:$LINENO: checking for CUDA headers" >&5
 $as_echo_n "checking for CUDA headers... " >&6; }
-as_ac_File=`$as_echo "ac_cv_file_${CUDA_INC}/cublas.h" | $as_tr_sh`
-{ $as_echo "$as_me:$LINENO: checking for ${CUDA_INC}/cublas.h" >&5
-$as_echo_n "checking for ${CUDA_INC}/cublas.h... " >&6; }
+as_ac_File=`$as_echo "ac_cv_file_${CUDA_INC}/cublas_v2.h" | $as_tr_sh`
+{ $as_echo "$as_me:$LINENO: checking for ${CUDA_INC}/cublas_v2.h" >&5
+$as_echo_n "checking for ${CUDA_INC}/cublas_v2.h... " >&6; }
 if { as_var=$as_ac_File; eval "test \"\${$as_var+set}\" = set"; }; then
   $as_echo_n "(cached) " >&6
 else
@@ -2589,7 +2589,7 @@ else
   { { $as_echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
 $as_echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
    { (exit 1); exit 1; }; }
-if test -r "${CUDA_INC}/cublas.h"; then
+if test -r "${CUDA_INC}/cublas_v2.h"; then
   eval "$as_ac_File=yes"
 else
   eval "$as_ac_File=no"
@@ -2645,7 +2645,41 @@ else
 	LDFLAGS="-L${CUDA_HOME}/lib"
 fi
 
-LIBS="-lcudart -lcublas"
+{ $as_echo "$as_me:$LINENO: checking whether cusolver is used" >&5
+$as_echo_n "checking whether cusolver is used... " >&6; }
+as_ac_File=`$as_echo "ac_cv_file_${CUDA_INC}/cusolverDn.h" | $as_tr_sh`
+{ $as_echo "$as_me:$LINENO: checking for ${CUDA_INC}/cusolverDn.h" >&5
+$as_echo_n "checking for ${CUDA_INC}/cusolverDn.h... " >&6; }
+if { as_var=$as_ac_File; eval "test \"\${$as_var+set}\" = set"; }; then
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  { { $as_echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
+$as_echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+if test -r "${CUDA_INC}/cusolverDn.h"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+ac_res=`eval 'as_val=${'$as_ac_File'}
+		 $as_echo "$as_val"'`
+	       { $as_echo "$as_me:$LINENO: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+as_val=`eval 'as_val=${'$as_ac_File'}
+		 $as_echo "$as_val"'`
+   if test "x$as_val" = x""yes; then
+  check_cusolve=T
+fi
+
+if test "${check_cusolve}" == "T"; then
+	LIBS="-lcudart -lcublas -lcusolver"
+else
+	LIBS="-lcudart -lcublas"
+fi
+
+
 
 
 #################### R Software ####################
