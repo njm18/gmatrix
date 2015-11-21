@@ -15,7 +15,10 @@
 #include <stdio.h>
 #include <cublas_v2.h>
 #include <curand_kernel.h>
+
+#if CUDART_VERSION < 7000
 #include <cusolverDn.h>
+#endif
 
 #include <thrust/reduce.h>
 #include <thrust/functional.h>
@@ -266,7 +269,10 @@ GLOBAL __device__ int CUDA_R_Na_int;
 GLOBAL __device__ double CUDA_R_Na_double;
 GLOBAL __device__ float CUDA_R_Na_float;
 GLOBAL cublasHandle_t handle[MAX_DEVICE];
+#if CUDART_VERSION < 7000
 GLOBAL cusolverDnHandle_t  cudshandle[MAX_DEVICE];
+#endif
+
 GLOBAL int total_states[MAX_DEVICE] ;
 GLOBAL curandState* dev_states[MAX_DEVICE];
 GLOBAL int threads_per_block[MAX_DEVICE] ;
