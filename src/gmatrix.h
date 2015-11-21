@@ -385,7 +385,7 @@ void initialize_globals();
 SEXP get_device();
 void setDevice(int *device, int *silent);
 SEXP setup_curand(SEXP in_total_states, SEXP in_seed, SEXP in_silent, SEXP in_force);
-void startCublas(int* silent);
+void startCublas(int* silent, int *set);
 void stopCublas(int* silent) ;
 void deviceReset();
 void check_mem(int *freer, int *totr, int *silent);

@@ -180,9 +180,11 @@ SEXP cudaVersion() {
 	int myint = CUDART_VERSION;
 	return(asSEXPint(myint));
 }
-void startCublas(int* silent) { // must be called with .C interface - also starts cusolve
+void startCublas(int* silent, int *set) { // must be called with .C interface - also starts cusolve
 	cublasStatus_t status1;
+	set[0]=0;
 	if(dev_cublas_set[currentDevice]==0) {
+		set[0]=1;
 		if(silent[0]==0)
 			Rprintf("Starting cublas on device %d.\n", currentDevice);
 		status1 = cublasCreate(&(handle[currentDevice]));
