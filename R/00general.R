@@ -122,11 +122,13 @@ setDevice = function(device,force=FALSE,silent=FALSE,...) {
 	tmp=.C("startCublas", as.logical(silent), myset)
 	setTuningPameters(force=force, ...)
 	if(tmp[[2]]==1L) {#not sure why but sometimes cublas give error first time round... jerry riggin' it
-	    x= g(matrix(0, 2, 2))
-		y=  g(matrix(c(1, 1)))
-		tmp=tryCatch( .Call("matrix_multiply", x, y, FALSE, FALSE, x@type) , error = function(e) return("ERR")) 
+        jerryrig=function() {
+            x= g(matrix(0, 2, 2))
+            y=  g(matrix(c(1, 1)))
+            tmp=.Call("matrix_multiply", x, y, FALSE, FALSE, x@type)
+        }
+        tmp=tryCatch(jerryrig(), error=function(e) return("ERR"))
 	}
-
 }
 
 

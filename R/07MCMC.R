@@ -165,7 +165,7 @@ setClass("lpgr",
 
 keep=function(q) lapply(q, function(x) if(any(class(x) %in% c("gmatrix","gvector"))) h(x) else x)
 
-basicHMC = function (lpgr, initial, nsims, nsteps, step, 
+basicHMC = function (lpgrf, initial, nsims, nsteps, step, 
                      burnin=1, nstepsburnin=nsteps,stepburnin=step, Tstart=1, r=1 ,
                      keep=keep,
 					 thin=1, report=100){
@@ -184,7 +184,7 @@ basicHMC = function (lpgr, initial, nsims, nsteps, step,
   T=Tstart
   for(i in 1:nsims) {
     initial.p = .simp(st$q.current)
-    st=.basicHMCOneStep(lpgr, 
+    st=.basicHMCOneStep(lpgrf, 
                         initial=st$q.current,
                         initial.p=initial.p,
                         lpgr.initial=st$lpgr.current,
