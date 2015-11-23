@@ -46,7 +46,7 @@ Total number of simulations includeing burnin.
 	The number of iterations used for burnin. All burnin samples are discarded.
 }
   \item{keep}{
-	Function to extract samples to keep. If defualt keep function is defined as \keep = code{function(q) lapply(q, function(x) if(any(class(x) %in% c("gmatrix","gvector"))) g(x) else x)}.
+	Function to extract samples to keep. If defualt keep function is defined as \code{keep = function(q) lapply(q, function(x) if(any(class(x) \%in\% c("gmatrix","gvector"))) g(x) else x)}.
 }
   \item{thin}{
 	Selects the number of samples to keep. \code{thin=1} keeps all the samples. \code{thin=5} keeps only ever fifth sample.
