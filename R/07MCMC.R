@@ -162,9 +162,12 @@ setClass("lpgr",
 			return(matrix(rnorm(nrow(x)*ncol(x)), nrow(x),ncol(x)))
 	))
 }
+
+keep=function(q) lapply(q, function(x) if(any(class(x) %in% c("gmatrix","gvector"))) h(x) else x)
+
 basicHMC = function (lpgr, initial, nsims, nsteps, step, 
                      burnin=1, nstepsburnin=nsteps,stepburnin=step, Tstart=1, r=1 ,
-                     keep=function(q) lapply(q, function(x) if(any(class(x) %in% c("gmatrix","gvector"))) h(x) else x),
+                     keep=keep,
 					 thin=1, report=100){
 
   sims=list()
