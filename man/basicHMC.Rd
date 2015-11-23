@@ -71,12 +71,12 @@ Neal, Radford M. "MCMC using Hamiltonian dynamics." Handbook of Markov Chain Mon
 Beam, Andrew L., Sujit K. Ghosh, and Jon Doyle. "Fast hamiltonian monte carlo using gpu computing." Journal of Computational and Graphical Statistics just-accepted (2015): 00-00.
 }
 \author{
-Nathan Morris (this is actually a significantly modified version of a HMC implementation created by Radford Neal: http://www.cs.utoronto.ca/~radford/GRIMS.html)
+Nathan Morris (this is actually a significantly modified version of an HMC implementation created by Radford Neal: http://www.cs.utoronto.ca/~radford/GRIMS.html)
 }
 
 
 \seealso{
-\link{lpgr}
+\link{lpgr-class}
 }
 \examples{
 Test

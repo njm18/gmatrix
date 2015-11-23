@@ -25,6 +25,3 @@ No methods defined with class "lpgr" in the signature.
 \author{
 Nathan Morris
 }
-\note{
-%%  ~~further notes~~
-}
