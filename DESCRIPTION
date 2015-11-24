@@ -1,6 +1,6 @@
 Package: gmatrix
 Type: Package
-Title: An R Package for Harnessing GPU Power
+Title: GPU Computing in R
 Version: 0.3
 Date: 2015-11-23
 Author: Nathan Morris

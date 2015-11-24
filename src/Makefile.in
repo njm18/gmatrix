@@ -1,16 +1,16 @@
 # Compilers
-NVCC := @NVCC@
+NVCC = @NVCC@
 
 # Program-specifics
-OBJS := fact.o dist.o conversions.o general.o ops.o manipulation.o  matrix.o 
-TARGET := gmatrix.so
+OBJS = fact.o dist.o conversions.o general.o ops.o manipulation.o  matrix.o 
+TARGET = gmatrix.so
 
 # Compiler options
-FLAGS := @NCFLAGS@
+FLAGS = @NCFLAGS@
 
 # linker options
-LDFLAGS := @LDFLAGS@
-LIBS := @LIBS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
 
 # Build rules
 .SUFFIXES: .c .cu .o
