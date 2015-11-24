@@ -392,7 +392,7 @@ rsample = function(P, log=TRUE) {
 	if(!log)
 		P=log(P)
 	#SEXP gpu_rsample(SEXP in_P, SEXP in_rows, SEXP in_cols, SEXP in_norm, SEXP in_type);
-	norm = rowLogSums(P)
+	norm = gRowLogSums(P)
 	return(new("gvector", ptr=.Call("gpu_rsample",P@ptr, nrow(P), ncol(P),norm@ptr, P@type), length=nrow(P), type=2L))
 }
 

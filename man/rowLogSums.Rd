@@ -1,5 +1,5 @@
-\name{rowLogSums}
-\alias{rowLogSums}
+\name{gRowLogSums}
+\alias{gRowLogSums}
 \title{
 Sum the up the rows in log space.
 }
@@ -7,7 +7,7 @@ Sum the up the rows in log space.
 Sum up the rows in log space.
 }
 \usage{
-rowLogSums(x, startCol=1, endCol=ncol(x))
+gRowLogSums(x, startCol=1, endCol=ncol(x))
 }
 
 \arguments{

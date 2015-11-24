@@ -165,7 +165,7 @@ setClass("lpgr",
 
 keep=function(q) lapply(q, function(x) if(any(class(x) %in% c("gmatrix","gvector"))) h(x) else x)
 
-basicHMC = function (lpgrf, initial, nsims, nsteps, step, 
+gBasicHMC = function (lpgrf, initial, nsims, nsteps, step, 
                      burnin=1, nstepsburnin=nsteps,stepburnin=step, Tstart=1, r=1 ,
                      keep=keep,
 					 thin=1, report=100){

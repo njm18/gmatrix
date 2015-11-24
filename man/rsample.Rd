@@ -30,7 +30,7 @@ Nathan Morris
 }
 
 \seealso{
-\code{\link{rowLogSums}}
+\code{\link{gRowLogSums}}
 }
 
 

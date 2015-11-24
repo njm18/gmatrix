@@ -1,5 +1,5 @@
-\name{basicHMC}
-\alias{basicHMC}
+\name{gBasicHMC}
+\alias{gBasicHMC}
 \alias{keep}
 \title{
 Performing Hamiltonian MCMC
@@ -9,7 +9,7 @@ This function performs Hamiltonian MCMC for continuous distributions.
 }
 
 \usage{
-basicHMC(lpgrf, initial, nsims, nsteps, step,
+gBasicHMC(lpgrf, initial, nsims, nsteps, step,
 			burnin = 1, nstepsburnin = nsteps, stepburnin = step, Tstart = 1, r = 1,  
 			keep=keep,
 			thin = 1, report = 100)
@@ -57,7 +57,7 @@ Total number of simulations includeing burnin.
 }
 }
 \details{
- The most important input of \code{basicHMC()} is the \code{lpgrf} parameter. This \code{lpgrf} input must be a function which takes as its input a list of parameters and gives as its output the log probability (\code{lp}) excluding the normalization constant and a first derivative of the log probability (\code{gr}). Both the \code{lp} and \code{gr} information must be returned as slots in an object of class \code{lpgrf}. The \code{lp} slot must be a numberic CPU vector while \code{gr} slot must be a list with elements either on the CPU or GPU.The function \code{basicHMC()} is designed to run multiple chains simultaneously. Thus each element in the input is expected to be a matrix where the number of columns is the number of parallel chains and the number of rows is the dimension of the random variable being simulated. The input is assumed to be a list of parameters because in many cases there are different types of parameters such as hyper-parameters. Tracking the current stated of the chain using a list is therefore often quite natural. As a result of this convention, the  \code{gr} slot for \code{lpgr} object returned by the  \code{lpgrf} function must also be a list.
+ The most important input of \code{gBasicHMC()} is the \code{lpgrf} parameter. This \code{lpgrf} input must be a function which takes as its input a list of parameters and gives as its output the log probability (\code{lp}) excluding the normalization constant and a first derivative of the log probability (\code{gr}). Both the \code{lp} and \code{gr} information must be returned as slots in an object of class \code{lpgrf}. The \code{lp} slot must be a numberic CPU vector while \code{gr} slot must be a list with elements either on the CPU or GPU.The function \code{gBasicHMC()} is designed to run multiple chains simultaneously. Thus each element in the input is expected to be a matrix where the number of columns is the number of parallel chains and the number of rows is the dimension of the random variable being simulated. The input is assumed to be a list of parameters because in many cases there are different types of parameters such as hyper-parameters. Tracking the current stated of the chain using a list is therefore often quite natural. As a result of this convention, the  \code{gr} slot for \code{lpgr} object returned by the  \code{lpgrf} function must also be a list.
 }
 \value{
 Output is a list:

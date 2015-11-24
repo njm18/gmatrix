@@ -5,7 +5,7 @@
 
 \title{Class \code{"lpgr"}}
 \description{
-Objects of this class must be returned by any " \code{lprf}" function which is used by the \code{basicHMC()} function.
+Objects of this class must be returned by any " \code{lprf}" function which is used by the \code{gBasicHMC()} function.
 }
 \section{Objects from the Class}{
 Objects can be created by calls of the form \code{new("lpgr", ...)}.
@@ -20,7 +20,7 @@ Objects can be created by calls of the form \code{new("lpgr", ...)}.
 No methods defined with class "lpgr" in the signature.
 }
 \seealso{
-\code{\link{basicHMC}}
+\code{\link{gBasicHMC}}
 }
 \author{
 Nathan Morris
