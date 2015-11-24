@@ -10,9 +10,9 @@ This function performs Hamiltonian MCMC for continuous distributions.
 
 \usage{
 gBasicHMC(lpgrf, initial, nsims, nsteps, step,
-			burnin = 1, nstepsburnin = nsteps, stepburnin = step, Tstart = 1, r = 1,  
-			keep=keep,
-			thin = 1, report = 100)
+			burnin = 1, nstepsburnin = nsteps, stepburnin = step,
+			Tstart = 1, r = 1,  
+			keep=keep, thin = 1, report = 100)
 }
 
 \arguments{
