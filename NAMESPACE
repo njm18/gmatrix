@@ -4,7 +4,7 @@ exportPattern("^[^\\.]")
 
 
 exportClasses("gmatrix", "gvector", "gqr", "gsvd", "lpgr")
-importFrom("methods",getMethod, "callNextMethod", "new)
+importFrom("methods",getMethod, "callNextMethod", "new")
 importFrom("stats", "approxfun", "dbeta", "dbinom", "dgamma", "dnorm",
              "dpois", "dunif", "pbinom", "pchisq", "pnorm", "ppois",
              "qbeta", "qbinom", "qgamma", "qnorm", "qpois", "qunif",
