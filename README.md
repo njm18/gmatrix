@@ -8,7 +8,7 @@ In addition we assume that the divice is at least of NVIDIA(R) compute capibilit
 Installation Instructions
 -------------------------
 1. Install the the CUDA Toolkit. The current version of 'gmatix' has been tested for CUDA Toolkit 5.0 and 7.0. 
-2. Install R. The current version of 'gmatrix' has been tested under R 3.0.2.
+2. Install R. The current version of 'gmatrix' has been tested under R 3.0.2 and 3.2.2.
 3. Start R and then install the 'gmatrix' package with the following commands. Package compilation may take 5-10 minutes.
 
 ```
