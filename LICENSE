@@ -20,7 +20,11 @@ First the HMC code is a heavily modified version of the code created by Dr. Radf
 #>  This software can be obtained from http://www.cs.utoronto.ca/~radford/GRIMS.html
 
 Second, configure.ac file and other components of the build system borrowed heavily from 
-the 'magma' R package by Dr. Brian Smith which is licensed under GNU GPL 3 or later.
+the 'magma' R package by Dr. Brian Smith which is licensed under GNU GPL 3 or later. 
+https://cran.r-project.org/src/contrib/Archive/magma/
+
+Third the binomial distribution simulation is modified from the GSL library which is liscensed 
+under GNU GPL-3. http://www.gnu.org/licenses/licenses.html.
 
 Neither Dr. Neal nor Dr. Smith have reviewed the changes to the code made by the gmatrix 
 package author (Dr. Nathan Morris).
