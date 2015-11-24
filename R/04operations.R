@@ -584,7 +584,7 @@ gRowLogSums = function(x, startCol=1L, endCol=ncol(x)) {
 		stop("Invalid endCol.")
 		
 	checkDevice(x@device)
-	ret = new("gvector", ptr=.Call("gpu_gRowLogSums", ptr=x@ptr,
+	ret = new("gvector", ptr=.Call("gpu_rowLogSums", ptr=x@ptr,
 			nrow(x), endCol, startCol, x@type),
 			length=nrow(x),type=x@type)
 	return(ret)
