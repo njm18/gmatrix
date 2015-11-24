@@ -10,4 +10,4 @@ License: GPL-3  | file LICENSE
 SystemRequirements: Nvidia's CUDA toolkit (>= release 5.0) and Nvidia GPU with compute capibility >=2.0
 OS_type: unix
 URL: https://github.com/njm18/gmatrix
-Depends: methods
+Depends: methods, stats
