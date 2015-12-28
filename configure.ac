@@ -69,10 +69,18 @@ if test -z "${check_R}"; then
 	AC_MSG_ERROR([R not found!])
 fi 
 
+R_INCLUDE_DIR=$(R --slave --no-save -e "cat(R.home('include'))")
+AC_ARG_WITH([r-include],
+	[AC_HELP_STRING([--with-r-include=DIR],
+		[full path to R include files @<:@@:>@])],
+	[R_INCLUDE_DIR=$withval]
+)
+
+
 AC_MSG_RESULT([setting R header files to ${R_INCLUDE_DIR}])
 R_CPICFLAGS=`"${R_HOME}/bin/R" CMD config CPICFLAGS`
 NCFLAGS="${NCFLAGS} -Xcompiler \"-O2 -DADD_ ${R_CPICFLAGS} -I${R_INCLUDE_DIR}\""
-
+NCFLAGS="${NCFLAGS//[$'\t\r\n ']}"
 
 AC_SUBST([NVCC])
 AC_SUBST([NCFLAGS])

@@ -37,7 +37,7 @@ install.packages("gmatrix" ,
    configure.args = "
       --with-arch=sm_30
       --with-cuda-home=/opt/cuda
-      --with-r-home==/opt/R"
+      --with-r-home=/opt/R"
 )
 ```
 
