@@ -60,7 +60,7 @@ fi
 : ${R_HOME=`R RHOME`}
 AC_ARG_WITH([r-home],
 	[AC_HELP_STRING([--with-r-home=DIR],
-		[full path to R installation @<:@@:>@])],
+		[full path to R installation @<:@R RHOME@:>@])],
 	[R_HOME=$withval]
 )
 AC_MSG_RESULT([setting R home directory to ${R_HOME}])
@@ -72,7 +72,7 @@ fi
 R_INCLUDE_DIR=$(R --slave --no-save -e "cat(R.home('include'))")
 AC_ARG_WITH([r-include],
 	[AC_HELP_STRING([--with-r-include=DIR],
-		[full path to R include files @<:@@:>@])],
+		[full path to R include files @<:@R --slave --no-save -e "cat(R.home('include'))"@:>@])],
 	[R_INCLUDE_DIR=$withval]
 )
 
