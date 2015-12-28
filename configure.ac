@@ -13,7 +13,7 @@ AC_PROG_CC(gcc)
 : ${CUDA_TMP=`which nvcc`}
 AC_ARG_WITH([cuda-home],
 	[AC_HELP_STRING([--with-cuda-home=DIR],
-		[full path to CUDA installation @<:@/usr/local/cuda@:>@])],
+		[full path to CUDA installation @<:@which nvcc@:>@])],
 	[CUDA_HOME="$withval"], [CUDA_HOME=${CUDA_TMP%%nvcc}..])
 AC_MSG_RESULT([setting CUDA home directory to ${CUDA_HOME}])
 
