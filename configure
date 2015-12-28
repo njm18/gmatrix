@@ -653,6 +653,7 @@ enable_option_checking
 with_cuda_home
 with_arch
 with_r_home
+with_r_include
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1282,9 +1283,11 @@ if test -n "$ac_init_help"; then
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-cuda-home=DIR    full path to CUDA installation [/usr/local/cuda]
+  --with-cuda-home=DIR    full path to CUDA installation [which nvcc]
   --with-arch=SM          compute capability of the target device [sm_20]
-  --with-r-home=DIR       full path to R installation []
+  --with-r-home=DIR       full path to R installation [R RHOME]
+  --with-r-include=DIR    full path to R include files [R --slave --no-save -e
+                          "cat(R.home('include'))"]
 
 Some influential environment variables:
   CC          C compiler command
@@ -2737,11 +2740,21 @@ $as_echo "$as_me: error: R not found!" >&2;}
    { (exit 1); exit 1; }; }
 fi
 
+R_INCLUDE_DIR=$(R --slave --no-save -e "cat(R.home('include'))")
+
+# Check whether --with-r-include was given.
+if test "${with_r_include+set}" = set; then
+  withval=$with_r_include; R_INCLUDE_DIR=$withval
+
+fi
+
+
+
 { $as_echo "$as_me:$LINENO: result: setting R header files to ${R_INCLUDE_DIR}" >&5
 $as_echo "setting R header files to ${R_INCLUDE_DIR}" >&6; }
 R_CPICFLAGS=`"${R_HOME}/bin/R" CMD config CPICFLAGS`
 NCFLAGS="${NCFLAGS} -Xcompiler \"-O2 -DADD_ ${R_CPICFLAGS} -I${R_INCLUDE_DIR}\""
-
+NCFLAGS="${NCFLAGS//$'\t\r\n '}"
 
 
 

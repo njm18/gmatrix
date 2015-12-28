@@ -27,7 +27,9 @@ Installation Note
 -----------------
 By default, when compiling, the build process assumes that
 + The nvcc compiler is in the PATH, and that the the CUDA library files may be located based on the location of nvcc.
-+ R is located in the PATH, and that the R libraries may be located using this information.
++ R is located in the PATH, and:
+     + The R home directory may be located using the command: R RHOME
+     + The R include director may be located using the command: R --slave --no-save -e "cat(R.home('include')).
 + The compute capability of the target device is 2.0.
 
 If these are incorrect assumptions, the user may set these values and install using the following R command as an example.
@@ -37,10 +39,15 @@ install.packages("gmatrix" ,
    configure.args = "
       --with-arch=sm_30
       --with-cuda-home=/opt/cuda
-      --with-r-home=/opt/R"
+      --with-r-home=/opt/R
+	  --with-r-include=/opt/R/include/x64"
 )
 ```
+Alternatively, from the command line, use a cammand such as:
 
+```
+ R CMD INSTALL gmatrix  --configure-args="--with-arch=sm_35"
+```
 	    
 Testing the Installation
 -------------------------
