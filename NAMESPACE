@@ -4,7 +4,7 @@ exportPattern("^[^\\.]")
 
 
 exportClasses("gmatrix", "gvector", "gqr", "gsvd", "lpgr")
-importFrom("methods", getMethod, "callNextMethod", "new", "show")
+importFrom("methods", getMethod, "callNextMethod", "new", "show", "cbind2", "rbind2")
 importFrom("stats", "approxfun", "dbeta", "dbinom", "dgamma", "dnorm",
              "dpois", "dunif", "pbinom", "pchisq", "pnorm", "ppois",
              "qbeta", "qbinom", "qgamma", "qnorm", "qpois", "qunif",
@@ -77,8 +77,9 @@ exportMethods(
     'gqr.coef',
     'solve',
 	'svd',
-	'chol')
-
+	'chol',
+	'rbind2',
+	'cbind2')
 
 
 

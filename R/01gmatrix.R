@@ -612,6 +612,140 @@ setReplaceMethod("[", c("gmatrix","missing","missing"),
 
 
 
+setMethod("cbind2", signature(x = "gmatrix", y = "gmatrix"),
+          function(x, y, ...) {
+            return(.gcbind(x,y))
+          })
+
+setMethod("cbind2", signature(x = "gmatrix", y = "gvector"),
+          function(x, y, ...) {
+            y=gmatrix(y, ncol=1, dup=FALSE)
+            return(.gcbind(x,y))
+          })
+
+setMethod("cbind2", signature(x = "gvector", y = "gmatrix"),
+          function(x, y, ...) {
+            x=gmatrix(x, ncol=1, dup=FALSE)
+            return(.gcbind(x,y))
+          })
+
+setMethod("cbind2", signature(x = "gvector", y = "gvector"),
+          function(x, y, ...) {
+            x=gmatrix(x, ncol=1, dup=FALSE)
+            y=gmatrix(y, ncol=1, dup=FALSE)
+            return(.gcbind(x,y))
+          })	  
+
+.gcbind=function(x,y) {
+  if(x@type!=y@type) {
+    totype=min(c(x@type,y@type))
+    if(x@type!=totype)
+      x=convertType(x,totype)
+    if(y@type!=totype)
+      y=convertType(y,totype)
+    warning("Coercing type in cbind.")
+  }
+  checkDevice(c(y@device,x@device))
+  ncx=ncol(x)
+  ncy=ncol(y)
+  nrx=nrow(x)
+  nry=nrow(y)
+  nrret=max(nrx, nry)
+  ncret=ncx + ncy
+  ret=gmatrix(0, nrow=nrret, ncol=ncret, type=x@type) #note this unecisarily initializes
+	if(ncx==1L) {
+		if(nrx>nry) {
+			stop("Cannot cbind. Length of x is too long.")
+		}
+		ret[,1L] <-as.gvector(x, dup=FALSE)
+		ret[, (ncx+1L) %to% ncret] <- y
+	} else if(ncy==1L) {
+		if(nrx<nry) {
+			stop("Cannot cbind. Length of y is too long.")
+		}
+		ret[, (1L %to% ncx) ] <-x
+		ret[, ncret] <- as.gvector(y, dup=FALSE)
+	} else {
+		if(nrx!=nry) {
+			stop("Cannot cbind matrices with mismatched dimensions.")
+		}
+		ret[, 1L %to% ncx] <-x
+		ret[, (ncx+1L) %to% ncret] <-y
+  }
+  return(ret)
+}
+
+
+setMethod("rbind2", signature(x = "gmatrix", y = "gmatrix"),
+          function(x, y, ...) {
+            return(.grbind(x,y))
+          })
+
+setMethod("rbind2", signature(x = "gmatrix", y = "gvector"),
+          function(x, y, ...) {
+            y=gmatrix(y, nrow=1, dup=FALSE)
+            return(.grbind(x,y))
+          })
+
+setMethod("rbind2", signature(x = "gvector", y = "gmatrix"),
+          function(x, y, ...) {
+            x=gmatrix(x, nrow=1, dup=FALSE)
+            return(.grbind(x,y))
+          })
+
+setMethod("rbind2", signature(x = "gvector", y = "gvector"),
+          function(x, y, ...) {
+            x=gmatrix(x, nrow=1, dup=FALSE)
+            y=gmatrix(y, nrow=1, dup=FALSE)
+            return(.grbind(x,y))
+          })	  
+
+.grbind=function(x,y) {
+  if(x@type!=y@type) {
+    totype=min(c(x@type,y@type))
+    if(x@type!=totype)
+      x=convertType(x,totype)
+    if(y@type!=totype)
+      y=convertType(y,totype)
+    warning("Coercing type in cbind.")
+  }
+  checkDevice(c(y@device,x@device))
+  ncx=ncol(x)
+  ncy=ncol(y)
+  nrx=nrow(x)
+  nry=nrow(y)
+  ncret=max(ncx, ncy)
+  nrret=nrx + nry
+  ret=gmatrix(0, nrow=nrret, ncol=ncret, type=x@type) #note this unecisarily initializes
+  if(nrx==1L) {
+  	if(ncx>ncy) {
+		stop("Cannot cbind. Length of x is too long.")
+	}
+    ret[1L,] <-as.gvector(x, dup=FALSE)
+    ret[(nrx+1L) %to% nrret,] <- y
+  } else if(nry==1L) {
+  	if(ncx<ncy) {
+		stop("Cannot cbind. Length of y is too long.")
+	}
+    ret[(1L %to% nrx), ] <-x
+    ret[nrret,] <- as.gvector(y, dup=FALSE)
+  } else {
+    if(ncx!=ncy) {
+      stop("Cannot rbind matrices with mismatched dimensions.")
+    }
+    ret[1L %to% nrx,] <-x
+    ret[(nrx+1L) %to% nrret,] <-y
+  }
+  return(ret)
+}
+
+
+
+
+
+
+
+
 
 
 

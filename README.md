@@ -29,7 +29,7 @@ By default, when compiling, the build process assumes that
 + The nvcc compiler is in the PATH, and that the the CUDA library files may be located based on the location of nvcc.
 + R is located in the PATH, and:
      + The R home directory may be located using the command: R RHOME
-     + The R include director may be located using the command: R --slave --no-save -e "cat(R.home('include')).
+     + The R include director may be located using the command: R --slave --no-save -e "cat(R.home('include'))".
 + The compute capability of the target device is 2.0.
 
 If these are incorrect assumptions, the user may set these values and install using the following R command as an example.
