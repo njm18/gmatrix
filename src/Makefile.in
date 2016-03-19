@@ -18,7 +18,7 @@ LIBS = @LIBS@
 all: $(TARGET) 
 
 $(TARGET): $(OBJS)
-	$(NVCC) -shared $(LDFLAGS) $(LIBS) $(OBJS) -o $@
+	$(NVCC) $(LDFLAGS) $(LIBS) $(OBJS) -o $@
 
 %.o: %.c
 	$(NVCC) -c $(FLAGS) $< -o $@
