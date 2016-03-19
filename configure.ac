@@ -39,9 +39,9 @@ AC_CHECK_FILE([${CUDA_INC}/cublas_v2.h],
 AC_MSG_CHECKING([whether this is a 64-bit version of CUDA])
 AC_CHECK_FILE([${CUDA_HOME}/lib64/libcublas.so], [check_bit=64-bit])
 if test "${check_bit}" == "64-bit"; then
-	LDFLAGS="-L${CUDA_HOME}/lib64"
+	LDFLAGS="-shared -L${CUDA_HOME}/lib64"
 else
-	LDFLAGS="-L${CUDA_HOME}/lib"
+	LDFLAGS="-shared -L${CUDA_HOME}/lib"
 fi
 
 AC_MSG_CHECKING([whether cusolver is used])
@@ -75,12 +75,20 @@ AC_ARG_WITH([r-include],
 		[full path to R include files @<:@R --slave --no-save -e "cat(R.home('include'))"@:>@])],
 	[R_INCLUDE_DIR=$withval]
 )
-
-
 AC_MSG_RESULT([setting R header files to ${R_INCLUDE_DIR}])
+
 R_CPICFLAGS=`"${R_HOME}/bin/R" CMD config CPICFLAGS`
 NCFLAGS="${NCFLAGS} -Xcompiler \"-O2 -DADD_ ${R_CPICFLAGS} -I${R_INCLUDE_DIR}\""
 NCFLAGS="${NCFLAGS//[$'\t\r\n ']}"
+		
+AC_CANONICAL_HOST
+# Check for which host we are on and setup a few things
+case $host_os in
+  darwin* )
+    TMPLDFLAGS=`R CMD config --ldflags`
+    LDFLAGS="${LDFLAGS} -Xlinker \"${TMPLDFLAGS}\""
+        ;;
+esac
 
 AC_SUBST([NVCC])
 AC_SUBST([NCFLAGS])
