@@ -2752,7 +2752,8 @@ $as_echo "$as_me: error: R not found!" >&2;}
    { (exit 1); exit 1; }; }
 fi
 
-R_INCLUDE_DIR=$(R --slave --no-save -e "cat(R.home('include'))")
+R_INCLUDE_DIR=$(R --slave --no-save -e "cat('Unique123',R.home('include'),sep=':')" | grep Unique123)
+R_INCLUDE_DIR=${R_INCLUDE_DIR#*:}
 
 # Check whether --with-r-include was given.
 if test "${with_r_include+set}" = set; then

@@ -69,7 +69,8 @@ if test -z "${check_R}"; then
 	AC_MSG_ERROR([R not found!])
 fi 
 
-R_INCLUDE_DIR=$(R --slave --no-save -e "cat(R.home('include'))")
+R_INCLUDE_DIR=$(R --slave --no-save -e "cat('Unique123',R.home('include'),sep=':')" | grep Unique123)
+R_INCLUDE_DIR=${R_INCLUDE_DIR#*:}
 AC_ARG_WITH([r-include],
 	[AC_HELP_STRING([--with-r-include=DIR],
 		[full path to R include files @<:@R --slave --no-save -e "cat(R.home('include'))"@:>@])],
