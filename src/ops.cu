@@ -38,6 +38,33 @@
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
 			return ret_final;\
+		}\
+		template <typename T>\
+	    __global__ void kernal_ip_##MNAME (T* x, int n, int operations_per_thread) \
+		{\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
+				if(i<n) {\
+					x[i] = MCFUN;\
+				}\
+			}\
+		}\
+		SEXP gpu_ip_##MNAME (SEXP y, SEXP sn, SEXP in_type)\
+		{\
+			int n = INTEGER(sn)[0];\
+			DECERROR0;\
+			PROCESS_TYPE_NO_SIZE_SF;\
+			struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(y);\
+			if(type==0) {\
+				GET_BLOCKS_PER_GRID(n, kernal_ip_##MNAME <double>);\
+				kernal_ip_##MNAME <double><<<blocksPerGrid, (tpb)>>>((double *) A->d_vec, n, operations_per_thread);\
+			} else if(type==1) {\
+				GET_BLOCKS_PER_GRID(n, kernal_ip_##MNAME <float>);\
+				kernal_ip_##MNAME <float><<<blocksPerGrid, (tpb)>>>((float *) A->d_vec, n, operations_per_thread);\
+			}\
+			CUDA_CHECK_KERNAL;\
+			return y;\
 		}
 
 #define ELEMENTWISEOP_RETURNINT(MNAME,MCFUN)  \
@@ -72,7 +99,8 @@
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
 			return ret_final;\
-		}
+		}\
+
 
 ELEMENTWISEOP(one_over,1/x[i]);
 ELEMENTWISEOP(sqrt,sqrt(x[i]));
@@ -230,6 +258,95 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 			ret_final = gpu_register(ret);\
 			return ret_final;\
 		}
+		
+#define BINARYOP_SF_IP(MNAME,MCFUN1, MCFUN2, MCFUN3) \
+		template <typename T>\
+		__global__ void kernal_same_size_ip_##MNAME (T* y, T* x, int N, int operations_per_thread)\
+		{\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
+				if (i < N) {\
+					y[i] = MCFUN1 ;\
+				}\
+			}\
+		}\
+		SEXP gpu_same_size_ip_##MNAME (SEXP A_in, SEXP B_in, SEXP sn, SEXP in_type)\
+		{\
+			int n = INTEGER(sn)[0];\
+			DECERROR0;\
+			struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(A_in);\
+			struct gpuvec *B = (struct gpuvec*) R_ExternalPtrAddr(B_in);\
+			PROCESS_TYPE_NO_SIZE_SF;\
+			if(type==0) {\
+				GET_BLOCKS_PER_GRID(n, kernal_same_size_ip_##MNAME <double> );\
+				kernal_same_size_ip_##MNAME <double> <<<blocksPerGrid, (tpb)>>>((double *) A->d_vec, (double *) B->d_vec, n, operations_per_thread);\
+			} else if(type==1) {\
+				GET_BLOCKS_PER_GRID(n, kernal_same_size_ip_##MNAME <float> );\
+				kernal_same_size_ip_##MNAME <float> <<<blocksPerGrid, (tpb)>>>((float *) A->d_vec, (float *) B->d_vec,  n, operations_per_thread);\
+			}\
+			CUDA_CHECK_KERNAL;\
+			return A_in;\
+		}\
+		template <typename T>\
+		__global__ void kernal_scaler_ip_##MNAME (T* y, T c, int N, int operations_per_thread)\
+		{\
+		int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+		for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+			i < mystop; i+=blockDim.x) {\
+				if (i < N) {\
+					y[i] = MCFUN3 ;\
+				}\
+			}\
+		}\
+		SEXP gpu_scaler_ip_##MNAME (SEXP A_in, SEXP B_in, SEXP sn, SEXP in_type)\
+		{\
+			int n = INTEGER(sn)[0];\
+			DECERROR0;\
+			struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(A_in);\
+			PROCESS_TYPE_NO_SIZE_SF;\
+			if(type==0) {\
+				double B = REAL(B_in)[0];\
+				GET_BLOCKS_PER_GRID(n, kernal_scaler_ip_##MNAME <double>);\
+				kernal_scaler_ip_##MNAME <double> <<<blocksPerGrid, (tpb)>>>((double *) A->d_vec, B, n, operations_per_thread);\
+			} else if(type==1) {\
+				float B = (float) REAL(B_in)[0];\
+				GET_BLOCKS_PER_GRID(n,kernal_scaler_ip_##MNAME <float>);\
+				kernal_scaler_ip_##MNAME <float> <<<blocksPerGrid, (tpb)>>>((float *) A->d_vec, B, n, operations_per_thread);\
+			}\
+			CUDA_CHECK_KERNAL;\
+			return A_in;\
+		}\
+		template <typename T>\
+		__global__ void kernal_diff_size_ip_##MNAME (T* y, T* x,  int ny, int nx, int operations_per_thread)\
+		{\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
+				int j = i % nx;\
+				if (i < ny) {\
+					y[i] = MCFUN2 ;\
+				}\
+			}\
+		}\
+		SEXP gpu_diff_size_ip_##MNAME(SEXP A_in, SEXP B_in, SEXP sna, SEXP snb, SEXP in_type)\
+		{\
+			int na = INTEGER(sna)[0];\
+			int nb = INTEGER(snb)[0];\
+			DECERROR0;\
+			struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(A_in);\
+			struct gpuvec *B = (struct gpuvec*) R_ExternalPtrAddr(B_in);\
+			PROCESS_TYPE_NO_SIZE_SF;\
+			if(type==0) {\
+				GET_BLOCKS_PER_GRID(na, kernal_diff_size_ip_##MNAME <double>);\
+				kernal_diff_size_ip_##MNAME <double> <<<blocksPerGrid, (tpb)>>>((double *) A->d_vec, (double *) B->d_vec, na, nb, operations_per_thread);\
+			} else if(type==1) {\
+				GET_BLOCKS_PER_GRID(na, kernal_diff_size_ip_##MNAME <float>);\
+				kernal_diff_size_ip_##MNAME <float> <<<blocksPerGrid, (tpb)>>>((float *) A->d_vec, (float *) B->d_vec,  na, nb, operations_per_thread);\
+			} \
+			CUDA_CHECK_KERNAL;\
+			return A_in;\
+		}
 
 #define BINARYOP(MNAME,MCFUN1, MCFUN2, MCFUN3) \
 		template <typename T>\
@@ -340,6 +457,105 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
 			return ret_final;\
+		}
+		
+#define BINARYOP_IP(MNAME,MCFUN1, MCFUN2, MCFUN3) \
+		template <typename T>\
+		__global__ void kernal_same_size_ip_##MNAME (T* y, T* x, int N, int operations_per_thread)\
+		{\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
+				if (i < N) {\
+					y[i] = MCFUN1 ;\
+				}\
+			}\
+		}\
+		SEXP gpu_same_size_ip_##MNAME (SEXP A_in, SEXP B_in, SEXP sn, SEXP in_type)\
+		{\
+			int n = INTEGER(sn)[0];\
+			DECERROR0;\
+			struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(A_in);\
+			struct gpuvec *B = (struct gpuvec*) R_ExternalPtrAddr(B_in);\
+			PROCESS_TYPE_NO_SIZE;\
+			if(type==0) {\
+				GET_BLOCKS_PER_GRID(n,kernal_same_size_ip_##MNAME <double>);\
+				kernal_same_size_ip_##MNAME <double> <<<blocksPerGrid, (tpb)>>>((double *) A->d_vec, (double *) B->d_vec, n, operations_per_thread);\
+			} else if(type==1) {\
+				GET_BLOCKS_PER_GRID(n,kernal_same_size_ip_##MNAME <float>);\
+				kernal_same_size_ip_##MNAME <float> <<<blocksPerGrid, (tpb)>>>((float *) A->d_vec, (float *) B->d_vec,  n, operations_per_thread);\
+			} else {\
+				GET_BLOCKS_PER_GRID(n,kernal_same_size_ip_##MNAME <int>);\
+				kernal_same_size_ip_##MNAME <int> <<<blocksPerGrid, (tpb)>>>((int *) A->d_vec, (int *) B->d_vec,  n, operations_per_thread);\
+			}\
+			CUDA_CHECK_KERNAL;\
+			return A_in;\
+		}\
+		template <typename T>\
+		__global__ void kernal_scaler_ip_##MNAME (T* y,  T c, int N, int operations_per_thread)\
+		{\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
+				if (i < N) {\
+					y[i] = MCFUN3 ;\
+				}\
+			}\
+		}\
+		SEXP gpu_scaler_ip_##MNAME (SEXP A_in, SEXP B_in, SEXP sn, SEXP in_type)\
+		{\
+			int n = INTEGER(sn)[0];\
+			DECERROR0;\
+			struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(A_in);\
+			PROCESS_TYPE_NO_SIZE;\
+			if(type==0){\
+				double B = REAL(B_in)[0];\
+				GET_BLOCKS_PER_GRID(n,kernal_scaler_ip_##MNAME <double>);\
+				kernal_scaler_ip_##MNAME <double> <<<blocksPerGrid, (tpb)>>>((double *) A->d_vec, B, n, operations_per_thread);\
+			} else if(type==1) {\
+				float B = (float)REAL(B_in)[0];\
+				GET_BLOCKS_PER_GRID(n,kernal_scaler_ip_##MNAME <float>);\
+				kernal_scaler_ip_##MNAME <float> <<<blocksPerGrid, (tpb)>>>((float *) A->d_vec, (float) B, n, operations_per_thread);\
+			} else {\
+				int B = INTEGER(B_in)[0];\
+				GET_BLOCKS_PER_GRID(n,kernal_scaler_ip_##MNAME <int>);\
+				kernal_scaler_ip_##MNAME <int> <<<blocksPerGrid, (tpb)>>>((int *) A->d_vec, (int) B, n, operations_per_thread);\
+			}\
+			CUDA_CHECK_KERNAL;\
+			return A_in;\
+		}\
+		template <typename T>\
+		__global__ void kernal_diff_size_ip_##MNAME (T* y, T* x,  int ny, int nx, int operations_per_thread)\
+		{\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
+				int j = i % nx;\
+				if (i < ny) {\
+					y[i] = MCFUN2 ;\
+				}\
+			}\
+		}\
+		SEXP gpu_diff_size_ip_##MNAME(SEXP A_in, SEXP B_in, SEXP sna, SEXP snb, SEXP in_type)\
+		{\
+			int na = INTEGER(sna)[0];\
+			int nb = INTEGER(snb)[0];\
+			DECERROR0;\
+			struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(A_in);\
+			struct gpuvec *B = (struct gpuvec*) R_ExternalPtrAddr(B_in);\
+			PROCESS_TYPE_NO_SIZE;\
+			if(type==0) {\
+				GET_BLOCKS_PER_GRID(na, kernal_diff_size_ip_##MNAME <double>);\
+				kernal_diff_size_ip_##MNAME <double> <<<blocksPerGrid, (tpb)>>>((double *) A->d_vec, (double *) B->d_vec, na, nb, operations_per_thread);\
+			} else if(type==1) {\
+				GET_BLOCKS_PER_GRID(na, kernal_diff_size_ip_##MNAME <float>);\
+				kernal_diff_size_ip_##MNAME <float> <<<blocksPerGrid, (tpb)>>>((float *) A->d_vec, (float *) B->d_vec,  na, nb, operations_per_thread);\
+			} else {\
+				GET_BLOCKS_PER_GRID(na, kernal_diff_size_ip_##MNAME <int>);\
+				kernal_diff_size_ip_##MNAME <int> <<<blocksPerGrid, (tpb)>>>((int *) A->d_vec, (int *) B->d_vec,  na, nb, operations_per_thread);\
+			}\
+			CUDA_CHECK_KERNAL;\
+			return A_in;\
 		}
 
 #define BINARYOP_COMPARE(MNAME,MCFUN1, MCFUN2, MCFUN3) \
@@ -543,22 +759,108 @@ ELEMENTWISEOP_RETURNINT(isinfinite, isinf(x[i]) );
 			CUDA_CHECK_KERNAL_CLEAN_1(ret->d_vec);\
 			ret_final = gpu_register(ret);\
 			return ret_final;\
+		}\
+
+#define BINARYOP_LOGICAL_IP(MNAME,MCFUN1, MCFUN2, MCFUN3) \
+		template <typename T>\
+		__global__ void kernal_same_size_ip_##MNAME (T* y, T* x, int N, int operations_per_thread)\
+		{\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
+				if (i < N) {\
+					y[i] = MCFUN1 ;\
+				}\
+			}\
+		}\
+		SEXP gpu_same_size_ip_##MNAME (SEXP A_in, SEXP B_in, SEXP sn, SEXP in_type)\
+		{\
+			int n = INTEGER(sn)[0];\
+			DECERROR0;\
+			struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(A_in);\
+			struct gpuvec *B = (struct gpuvec*) R_ExternalPtrAddr(B_in);\
+			PROCESS_TYPE_NO_SIZE;\
+			GET_BLOCKS_PER_GRID(n, kernal_same_size_ip_##MNAME <int>);\
+			if(type!=3)\
+				error("type must be logical for logical operations");\
+			kernal_same_size_ip_##MNAME <int> <<<blocksPerGrid, (tpb)>>>((int *) A->d_vec, (int *) B->d_vec, n, operations_per_thread);\
+			CUDA_CHECK_KERNAL;\
+			return A_in;\
+		}\
+		template <typename T>\
+		__global__ void kernal_scaler_ip_##MNAME (T* y, T c, int N, int operations_per_thread)\
+		{\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+				i < mystop; i+=blockDim.x) {\
+				if (i < N) {\
+					y[i] = MCFUN3 ;\
+				}\
+			}\
+		}\
+		SEXP gpu_scaler_ip_##MNAME (SEXP A_in, SEXP B_in, SEXP sn, SEXP in_type)\
+		{\
+			int n = INTEGER(sn)[0];\
+			DECERROR0;\
+			struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(A_in);\
+			int B = INTEGER(B_in)[0];\
+			PROCESS_TYPE_NO_SIZE;\
+			GET_BLOCKS_PER_GRID(n, kernal_scaler_ip_##MNAME <int> );\
+			if(type!=3)\
+				error("type must be logical for logical operations");\
+			kernal_scaler_ip_##MNAME <int> <<<blocksPerGrid, (tpb)>>>((int *) A->d_vec, B, n, operations_per_thread);\
+			CUDA_CHECK_KERNAL;\
+			return A_in;\
+		}\
+		template <typename T>\
+		__global__ void kernal_diff_size_ip_##MNAME (T* y, T* x, int ny, int nx, int operations_per_thread)\
+		{\
+			int mystop = blockDim.x * (blockIdx.x+1) * operations_per_thread;\
+			for ( int i = blockDim.x * blockIdx.x * operations_per_thread  + threadIdx.x;\
+			i < mystop; i+=blockDim.x) {\
+				int j = i % nx;\
+				if (i < ny) {\
+					y[i] = MCFUN2 ;\
+				}\
+			}\
+		}\
+		SEXP gpu_diff_size_ip_##MNAME(SEXP A_in, SEXP B_in, SEXP sna, SEXP snb, SEXP in_type)\
+		{\
+			int na = INTEGER(sna)[0];\
+			int nb = INTEGER(snb)[0];\
+			DECERROR0;\
+			struct gpuvec *A = (struct gpuvec*) R_ExternalPtrAddr(A_in);\
+			struct gpuvec *B = (struct gpuvec*) R_ExternalPtrAddr(B_in);\
+			PROCESS_TYPE_NO_SIZE;\
+			GET_BLOCKS_PER_GRID(na, kernal_diff_size_ip_##MNAME <int>);\
+			if(type!=3)\
+				error("type must be logical for logical operations");\
+			kernal_diff_size_ip_##MNAME <int> <<<blocksPerGrid, (tpb)>>>((int *) A->d_vec, (int *) B->d_vec, na, nb, operations_per_thread);\
+			CUDA_CHECK_KERNAL;\
+			return A_in;\
 		}
 
 
 
+BINARYOP_SF_IP(pow, pow(y[i], x[i]), pow(y[i], x[j]), pow(y[i] , c));
 BINARYOP_SF(pow12, pow(y[i], x[i]), pow(y[i], x[j]), pow(y[i] , c));
 BINARYOP_SF(pow21, pow(x[i], y[i]), pow(x[j], y[i]), pow(c, y[i]));
 
+BINARYOP_IP(sub, y[i] - x[i], y[i] - x[j], y[i] - c);
 BINARYOP(sub12, y[i] - x[i], y[i] - x[j], y[i] - c);
 BINARYOP(sub21, x[i] - y[i], x[j] - y[i], c - y[i]);
 
-
+BINARYOP_IP(div, y[i] / x[i], y[i] / x[j], y[i] / c);
 BINARYOP(div12, y[i] / x[i], y[i] / x[j], y[i] / c);
 BINARYOP(div21, x[i] / y[i], x[j] / y[i], c / y[i]);
 
+BINARYOP_SF_IP(mod, fmod(y[i] , x[i]), fmod(y[i] , x[j]), fmod(y[i], c));
 BINARYOP_SF(mod12, fmod(y[i] , x[i]), fmod(y[i] , x[j]), fmod(y[i], c));
 BINARYOP_SF(mod21, fmod(x[i] , y[i]), fmod(x[j] , y[i]), fmod(c, y[i]));
+
+
+BINARYOP_IP(mult, y[i] *  x[i], y[i] *  x[j], y[i] *  c);
+BINARYOP_IP(add,  y[i] +  x[i], y[i] +  x[j], y[i] +  c);
 
 BINARYOP(mult, y[i] *  x[i], y[i] *  x[j], y[i] *  c);
 BINARYOP(add,  y[i] +  x[i], y[i] +  x[j], y[i] +  c);
@@ -581,7 +883,7 @@ __device__ int logspaceadd<int>(int logx, int logy){
 }
 
 BINARYOP(lgspadd, logspaceadd(y[i], x[i]), logspaceadd(y[i], x[j]), logspaceadd(y[i], c));
-
+BINARYOP_IP(lgspadd, logspaceadd(y[i], x[i]), logspaceadd(y[i], x[j]), logspaceadd(y[i], c));
 
 BINARYOP_COMPARE(eq,   y[i] == x[i], y[i] == x[j], y[i] == c);
 BINARYOP_COMPARE(ne,   y[i] != x[i], y[i] != x[j], y[i] != c);
@@ -600,6 +902,9 @@ BINARYOP_COMPARE(lte21,  x[i] <=  y[i], x[j] <=  y[i], y[i] >=  c);
 
 BINARYOP_LOGICAL(and,   y[i] && x[i], y[i] && x[j], y[i] && c);
 BINARYOP_LOGICAL(or,   y[i] || x[i], y[i] || x[j], y[i] || c);
+
+BINARYOP_LOGICAL_IP(and,   y[i] && x[i], y[i] && x[j], y[i] && c);
+BINARYOP_LOGICAL_IP(or,   y[i] || x[i], y[i] || x[j], y[i] || c);
 
 /*maybe sometime finish this so that the comparison can be returned as logicals on the cpu
  *

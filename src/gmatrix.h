@@ -207,6 +207,11 @@
 	int type = INTEGER(in_type)[0];\
 	if(type>3)\
 		error("Incorrect type passed to '%s.'", __func__);
+		
+#define 	PROCESS_TYPE_NO_SIZE_SF\
+	int type = INTEGER(in_type)[0];\
+	if(type>1)\
+		error("Incorrect type passed to '%s.'", __func__);
 
 #define 	PROCESS_TYPE\
 	int type = INTEGER(in_type)[0];\
@@ -462,12 +467,17 @@ SEXP rcusolve_chol(SEXP A_in);
 //SEXP rcusolve_dgesv(SEXP A_in, SEXP B_in);
 //SEXP check_inverse_condition(SEXP Ain, SEXP Avalsin, SEXP permin, SEXP tolin) ;
 
-//simple binary operations
+//simple binary operations and operations that include in place (IP) procedures
 #define BINARYOPDEF(MNAME) \
 		SEXP gpu_same_size_##MNAME (SEXP A_in, SEXP B_in, SEXP sn, SEXP in_type);\
 		SEXP gpu_scaler_##MNAME (SEXP A_in, SEXP B_in, SEXP sn, SEXP in_type);\
 		SEXP gpu_diff_size_##MNAME(SEXP A_in, SEXP B_in, SEXP sna, SEXP snb, SEXP in_type);\
-
+		
+#define BINARYOPDEF_IP(MNAME) \
+		SEXP gpu_same_size_ip_##MNAME (SEXP A_in, SEXP B_in, SEXP sn, SEXP in_type);\
+		SEXP gpu_scaler_ip_##MNAME (SEXP A_in, SEXP B_in, SEXP sn, SEXP in_type);\
+		SEXP gpu_diff_size_ip_##MNAME(SEXP A_in, SEXP B_in, SEXP sna, SEXP snb, SEXP in_type);\
+		
 BINARYOPDEF(add);
 BINARYOPDEF(lgspadd);
 BINARYOPDEF(mult);
@@ -491,6 +501,16 @@ BINARYOPDEF(mod12);
 BINARYOPDEF(mod21);
 BINARYOPDEF(and);
 BINARYOPDEF(or);
+
+BINARYOPDEF_IP(add);
+BINARYOPDEF_IP(lgspadd);
+BINARYOPDEF_IP(mult);
+BINARYOPDEF_IP(sub);
+BINARYOPDEF_IP(div);
+BINARYOPDEF_IP(pow);
+BINARYOPDEF_IP(mod);
+BINARYOPDEF_IP(and);
+BINARYOPDEF_IP(or);
 
 //distributions
 SEXP gpu_rnorm(SEXP in_n, SEXP in_mean, SEXP in_sd, SEXP in_n_mean, SEXP in_n_sd, SEXP in_type);
@@ -556,6 +576,33 @@ SEXP gpu_isna( SEXP y, SEXP sn, SEXP in_type);
 SEXP gpu_isnan(SEXP y, SEXP sn, SEXP in_type);
 SEXP gpu_isfinite(SEXP y, SEXP sn, SEXP in_type);
 SEXP gpu_isinfinite(SEXP y, SEXP sn, SEXP in_type);
+
+SEXP gpu_ip_one_over(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_sqrt(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_exp(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_expm1(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_log(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_log2(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_log10(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_log1p(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_sin(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_cos(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_tan(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_asin(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_acos(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_atan(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_sinh(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_cosh(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_tanh(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_asinh(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_acosh(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_atanh(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_fabs(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_sign(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_lgamma(SEXP y, SEXP sn, SEXP in_type);
+SEXP gpu_ip_gamma(SEXP y, SEXP sn, SEXP in_type);
+
+
 
 //gfunction
 //SEXP gpu_gfunction_call(SEXP args_in, SEXP each_arg_len_in, SEXP fid_in, SEXP varid_in, SEXP outlen_in, SEXP in_type);

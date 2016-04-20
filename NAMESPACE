@@ -79,7 +79,30 @@ exportMethods(
 	'svd',
 	'chol',
 	'rbind2',
-	'cbind2')
+	'cbind2',
+	"sqrtIp",
+	"expIp",
+	"expm1Ip",
+	"logIp",
+	"log2Ip",
+	"log10Ip", 
+	"log1pIp",
+	"sinIp",
+	"cosIp",
+	"tanIp",
+	"asinIp",
+	"acosIp",
+	"atanIp", 
+	"sinhIp",
+	"coshIp",
+	"tanhIp",
+	"asinhIp",
+	"acoshIp",
+	"atanhIp", 
+	"absIp",
+	"lgammaIp",
+	"gammaIp",
+	"signIp")
 
 
 

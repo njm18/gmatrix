@@ -936,7 +936,31 @@ setMethod("MRNAME","gmatrix", function(x)  {
 				x=convertType(x,0L)
 			checkDevice(x@device)
 			return(new("gmatrix",ptr=.Call("gpu_MNAME",x@ptr, as.integer(prod(dim(x))),x@type), 
-							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames, type=MTYPE))})'
+							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames, type=MTYPE))})
+
+'
+
+.str_unaryops_ip ='
+setGeneric("MRNAMEIp",
+		function(x)
+			standardGeneric("MRNAMEIp"))
+setMethod("MRNAMEIp","gvector", function(x) {
+			if(x@type>1L)
+				stop("In place operations must be for \'double\' or \'single.\'")
+			if(length(gvector)<1L)
+				return(x)
+			checkDevice(x@device)
+			return(new("gvector",ptr=.Call("gpu_ip_MNAME",x@ptr, length(x), x@type), 
+							length=x@length, names=x@names, type=MTYPE))}) 
+setMethod("MRNAMEIp","gmatrix", function(x)  {
+			if(x@type>1L)
+				stop("In place operations must be for \'double\' or \'single.\'")
+			checkDevice(x@device)
+			return(new("gmatrix",ptr=.Call("gpu_ip_MNAME",x@ptr, as.integer(prod(dim(x))),x@type), 
+							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames, type=MTYPE))})
+
+'
+
 		
 					.unOps=		list(
 						#	c('one_over','one_over', "x@type"), 
@@ -980,7 +1004,13 @@ lapply(.unOps, function(op) {
 								eval(parse(text=exprStr))
 							} )				
 
-					
+lapply(.unOps[sapply(.unOps, function(x) x[3]=="x@type")], 	function(op) {
+								exprStr = gsub("MRNAME",op[1],.str_unaryops_ip)
+								exprStr = gsub("MNAME",op[2],exprStr)
+								exprStr = gsub("MTYPE",op[3],exprStr)
+								#cat(exprStr)
+								eval(parse(text=exprStr))
+							} )				
 					
 ####################################### 
 # elementwise binary operations
@@ -1349,6 +1379,125 @@ setMethod("MOP", signature(e1 = "matrix", e2 = "gvector"),
 
 '
 
+
+#binary operations in place
+.strOpIp = '
+setGeneric("MOP",
+		function(e1,e2)
+			standardGeneric("MOP")
+)
+setMethod("MOP", signature(e1 = "gvector", e2 = "gvector"), 
+		function(e1,e2) {
+			if(max(length(e1),length(e2))<1L)
+				stop("Length of object must be greater than 1 for operator: MOP.", call. = FALSE)
+			else if(length(e1)<length(e2)) {
+				stop("Length of first vector must be longer than second vector for operator: MOP.", call. = FALSE)
+			}
+			checkDevice(c(e1@device,e2@device))
+			MCHECK
+			
+			if(length(e2)==1L){
+				tryCatch(e2 <- .convert_to_appropriate_class(e2,e1@type), error=function(e) stop("Invalid value for operator: MOP.", call. = FALSE))
+				.Call("gpu_scaler_ip_MNAME", e1@ptr, e2, length(e1), e1@type)
+			} else if(length(e1)==length(e2)) {
+				if(e1@type!=e2@type)
+					stop("Type of both objects must be the same for operator: MOP.", call. = FALSE)
+				.Call("gpu_same_size_ip_MNAME", e1@ptr, e2@ptr,  e2@length, e1@type)
+			} else if((length(e1) %% length(e2)) ==0) {
+				if(e1@type!=e2@type)
+					stop("Type of both objects must be the same for operator: MOP.", call. = FALSE)
+				.Call("gpu_diff_size_ip_MNAME", e1@ptr, e2@ptr, e1@length, e2@length, e1@type)
+			} else
+				stop("longer object length is not a multiple of shorter object length.", call. = FALSE)
+			return(e1)
+		}
+)
+
+setMethod("MOP", signature(e1 = "gvector", e2 = "numeric"), function(e1,e2) {
+			if(max(length(e1),length(e2))<1L)
+				stop("Length of object must be greater than 1 for operator: MOP.", call. = FALSE)
+			else if(length(e1)<length(e2)) {
+				stop("Length of first vector must be longer than second vector for operator: MOP.", call. = FALSE)
+			}
+			checkDevice(e1@device)
+			if(length(e2)==1L){
+				if(e1@type>1L & !any( c("integer", "logical") %in% class(e2) ) )
+					stop("Types do not match.")
+				else if(e1@type<=1L & !any( "numeric" %in% class(e2) ) )
+					stop("Types do not match.")
+				.Call("gpu_scaler_ip_MNAME", e1@ptr, e2, length(e1), e1@type)
+			} else {
+				if(e1@type==1L)
+					tmp=as.gvector(e2, type=1L)
+				else
+					tmp=as.gvector(e2)
+				ret=e1 MOP tmp
+			}
+			return(e1)
+		}	 )
+setMethod("MOP", signature(e1 = "gvector", e2 = "logical"), getMethod("MOP", signature(e1 = "gvector", e2 = "numeric"))@.Data)
+
+setMethod("MOP", signature(e1 = "gmatrix", e2 = "gmatrix"), 
+		function(e1,e2) {
+			if(any(dim(e1)!=dim(e2)))
+				stop("Dimensions of matrix do not match for elementwise operation.", call. = FALSE)
+			myn=as.integer(prod(dim(e1)))
+			MCHECK
+			if(e1@type!=e2@type)
+					stop("Type of both objects must be the same for operator: MOP.", call. = FALSE)
+			checkDevice(c(e1@device,e2@device))
+			.Call("gpu_same_size_ip_MNAME", e1@ptr, e2@ptr, myn,  e1@type)
+			return(e1)
+		})
+
+
+setMethod("MOP", signature(e1 = "gmatrix", e2 = "numeric"), function(e1,e2) {
+			checkDevice(e1@device)
+			tmp1=new("gvector",length=as.integer(prod(dim(e1))),ptr=e1@ptr, type=e1@type)
+			tmpret=tmp1  MOP  e2
+			return(e1)
+		})
+setMethod("MOP", signature(e1 = "gmatrix", e2 = "logical"), getMethod("MOP", signature(e1 = "gmatrix", e2 = "numeric"))@.Data)
+
+setMethod("MOP", signature(e1 = "gmatrix", e2 = "gvector"), 
+		function(e1,e2) {
+			checkDevice(c(e1@device,e2@device))
+			tmp1=new("gvector",length=as.integer(prod(dim(e1))),ptr=e1@ptr, type=e1@type)
+			tmpret=tmp1  MOP  e2
+			return(e1)
+		})
+setMethod("MOP", signature(e1 = "gvector", e2 = "gmatrix"), 
+		function(e1,e2) {
+			checkDevice(c(e1@device,e2@device))
+			tmp2=new("gvector",length=as.integer(prod(dim(e2))),ptr=e2@ptr, type=e2@type)
+			tmpret1=e1  MOP  tmp2 #note I am counting on this to error out if the dimensions dont match
+			tmpret1=new("gmatrix",nrow=as.integer(nrow(e2)), ncol=as.integer(ncol(e2)),ptr=e1@ptr, type=e1@type)
+			return(tmpret1)
+		})
+setMethod("MOP", signature(e1 = "gmatrix", e2 = "matrix"), 
+		function(e1,e2) {
+			if(any(dim(e1)!=dim(e2)))
+				stop("Dimensions of matrix do not match for elementwise operation.", call. = FALSE)
+			if(e1@type==1L)
+				return(e1 MOP as.gmatrix(e2, type=1L))
+			else
+				return(e1 MOP as.gmatrix(e2))
+			
+		})
+		
+setMethod("MOP", signature(e1 = "gvector", e2 = "matrix"), 
+		function(e1,e2) {
+			if(e1@type==1L)
+				tmp=as.gmatrix(e2,type=1L)
+			else
+				tmp=as.gmatrix(e2)
+			return(e1 MOP tmp)
+		}
+)
+'
+
+
+
 .exprs_e1e2=eval(substitute(substitute(e, list(x = bquote(e1), y=bquote(e2))), list(e = .exprs_xy)))
 .exprs_str = paste( deparse(.exprs_e1e2),collapse="\n")
 .exprs_sf_e1e2=eval(substitute(substitute(e, list(x = bquote(e1), y=bquote(e2))), list(e = .exprs_sf_xy )))
@@ -1373,6 +1522,8 @@ setMethod("MOP", signature(e1 = "matrix", e2 = "gvector"),
 .exprs_sf_gc_e2e1=eval(substitute(substitute(e, list(x = bquote(e2), y=bquote(e1))), list(e = .exprs_sf_gpu_cpu_xy )))
 .exprs_sf_gc21_str =  paste( deparse(.exprs_sf_gc_e2e1),collapse="\n")
 
+.logical_check= "if(e1@type!=3L | e2@type!=3L) stop(\"Type must be\'logical\'\")"
+
 setGeneric("%lgspadd%",
 		function(e1,e2)
 			standardGeneric("%lgspadd%")
@@ -1380,13 +1531,13 @@ setGeneric("%lgspadd%",
 
 
 .exOps=list(
-		c("lgspadd","%lgspadd%", .exprs_str, "e1@type", "big@type", .exprs_gc12_str,.exprs_gc21_str  ),
-		c("mult","*",      .exprs_str, "e1@type", "big@type", .exprs_gc12_str,.exprs_gc21_str  ),
-		c("add" ,"+",      .exprs_str, "e1@type", "big@type", .exprs_gc12_str,.exprs_gc21_str  ),
-		c("eq"  ,"==",     .exprs_compare_str, "3L", "3L", .exprs_gc12_str,    .exprs_gc21_str  ),
-		c("ne"  ,"!=",     .exprs_compare_str, "3L", "3L" , .exprs_gc12_str,   .exprs_gc21_str  ),
-		c("and"  ,"&",    .exprs_l_str, "3L", "3L", .exprs_l_gc12_str, .exprs_l_gc21_str  ),
-		c("or"  ,"|",     .exprs_l_str, "3L", "3L", .exprs_l_gc12_str, .exprs_l_gc21_str  )
+		c("lgspadd","%lgspadd%", .exprs_str, "e1@type", "big@type", .exprs_gc12_str,.exprs_gc21_str , "%lgspadd=%", "" ),
+		c("mult","*",      .exprs_str, "e1@type", "big@type", .exprs_gc12_str,.exprs_gc21_str  , "%*=%", "" ),
+		c("add" ,"+",      .exprs_str, "e1@type", "big@type", .exprs_gc12_str,.exprs_gc21_str  , "%+=%", "" ),
+		c("eq"  ,"==",     .exprs_compare_str, "3L", "3L", .exprs_gc12_str,    .exprs_gc21_str , "none" , "" ),
+		c("ne"  ,"!=",     .exprs_compare_str, "3L", "3L" , .exprs_gc12_str,   .exprs_gc21_str ,"none" , "" ),
+		c("and"  ,"&",    .exprs_l_str, "3L", "3L", .exprs_l_gc12_str, .exprs_l_gc21_str ,  "%&=%" ,.logical_check),
+		c("or"  ,"|",     .exprs_l_str, "3L", "3L", .exprs_l_gc12_str, .exprs_l_gc21_str , "%|=%",.logical_check )
 		)
 
 
@@ -1402,16 +1553,22 @@ setGeneric("%lgspadd%",
 					#cat(exprStr)
 					eval(parse(text=exprStr))
 				} )
+				
+		lapply(.exOps[sapply(.exOps, function(x) return(x[8]!="none"))],
+				function(op) {
+					exprStr =	gsub("MCHECK", op[9], gsub("MNAME", op[1], gsub("MOP",op[8],.strOpIp)))
+					eval(parse(text=exprStr))
+				} )
 
 
-.nonExOps=list(	c("sub","-",.exprs_str, "e1@type", "e2@type",.exprs_gc12_str,.exprs_gc21_str ),
-		c("div","/",        .exprs_sf_str, "e1@type", "e2@type",.exprs_sf_gc12_str,.exprs_sf_gc21_str ),
-		c("pow","^",        .exprs_sf_str, "e1@type", "e2@type",.exprs_sf_gc12_str,.exprs_sf_gc21_str ),
-		c("mod","%%",       .exprs_sf_str, "e1@type", "e2@type",.exprs_sf_gc12_str,.exprs_sf_gc21_str ),
-		c("gt"  ,">",      .exprs_compare_str, "3L", "3L", .exprs_gc12_str,.exprs_gc21_str  ),
-		c("lt"  ,"<",      .exprs_compare_str, "3L", "3L", .exprs_gc12_str,.exprs_gc21_str  ),
-		c("gte" ,">=",     .exprs_compare_str, "3L", "3L", .exprs_gc12_str,.exprs_gc21_str  ),
-		c("lte" ,"<=",     .exprs_compare_str, "3L", "3L", .exprs_gc12_str,.exprs_gc21_str  )
+.nonExOps=list(	c("sub","-",.exprs_str, "e1@type", "e2@type",.exprs_gc12_str,.exprs_gc21_str, "%-=%", "" ),
+		c("div","/",        .exprs_sf_str, "e1@type", "e2@type",.exprs_sf_gc12_str,.exprs_sf_gc21_str, "%/=%" , ""),
+		c("pow","^",        .exprs_sf_str, "e1@type", "e2@type",.exprs_sf_gc12_str,.exprs_sf_gc21_str, "%^=%" , ""),
+		c("mod","%%",       .exprs_sf_str, "e1@type", "e2@type",.exprs_sf_gc12_str,.exprs_sf_gc21_str, "%mod=%", ""),
+		c("gt"  ,">",      .exprs_compare_str, "3L", "3L", .exprs_gc12_str,.exprs_gc21_str , "none" , ""),
+		c("lt"  ,"<",      .exprs_compare_str, "3L", "3L", .exprs_gc12_str,.exprs_gc21_str , "none" , ""),
+		c("gte" ,">=",     .exprs_compare_str, "3L", "3L", .exprs_gc12_str,.exprs_gc21_str , "none", "" ),
+		c("lte" ,"<=",     .exprs_compare_str, "3L", "3L", .exprs_gc12_str,.exprs_gc21_str ,"none" , "")
 		)
 
 lapply(.nonExOps, function(op) {
@@ -1425,188 +1582,8 @@ lapply(.nonExOps, function(op) {
 			eval(parse(text=exprStr))
 		} )
 
-
-
-#A= matrix(1:10,ncol=2)
-#B= matrix(1:10,nrow=2)
-#A=as.gmatrix(A)
-#B=as.gmatrix(B)
-#C=A%*%B
-#D=A%*%B
-#E=C*D
-#
-#A<-matrix(1:9000000,ncol=2)
-#system.time(
-#A<-A*(1:2)
-#)
-#
-#A<-gmatrix(1:9000000,ncol=2)
-#gc()
-#system.time(B<-A*A)
-#system.time(C<-A*1:2)
-#system.time(D<-A*3)
-
-#
-#setMethod("one_over","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_one_over",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("sqrt","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_sqrt",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("sqrt","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_sqrt",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("exp","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_exp",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("exp","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_exp",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("expm1","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_expm1",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("expm1","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_expm1",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("log","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_log",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("log","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_log",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("log2","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_log2",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("log2","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_log2",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("log10","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_log10",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("log10","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_log10",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("log1p","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_log1p",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("log1p","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_log1p",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("sin","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_sin",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("sin","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_sin",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("cos","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_cos",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("cos","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_cos",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("tan","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_tan",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("tan","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_tan",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("asin","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_asin",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("asin","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_asin",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("acos","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_acos",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("acos","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_acos",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("atan","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_atan",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("atan","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_atan",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("sinh","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_sinh",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("sinh","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_sinh",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("cosh","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_cosh",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("cosh","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_cosh",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("tanh","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_tanh",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("tanh","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_tanh",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("asinh","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_asinh",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("asinh","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_asinh",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("acosh","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_acosh",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("acosh","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_acosh",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("atanh","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_atanh",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("atanh","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_atanh",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("abs","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_abs",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("abs","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_abs",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("lgamma","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_lgamma",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("lgamma","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_lgamma",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#
-#setMethod("gamma","gmatrix", function(x)  
-#			return(new("gmatrix",ptr=.Call("gpu_gamma",x@ptr, as.integer(prod(dim(x)))), 
-#							nrow=x@nrow, ncol=x@ncol, rownames=x@rownames, colnames=x@colnames))) 
-#setMethod("gamma","gvector", function(x)  
-#			return(new("gvector",ptr=.Call("gpu_gamma",x@ptr, length(x)), 
-#							length=x@length, names=x@names))) 
-#qr(matrix(1,10,10))
-#
-#matrixRank=function(A) {
-#	return(qr(A)$rank)
-#}
-#matrixRank(matrix(1,10,10))
+lapply(.nonExOps[sapply(.nonExOps, function(x) return(x[8]!="none"))],
+				function(op) {
+					exprStr =	gsub("MCHECK", op[9], gsub("MNAME", op[1], gsub("MOP",op[8],.strOpIp)))
+					eval(parse(text=exprStr))
+				} )
