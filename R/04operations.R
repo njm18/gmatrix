@@ -980,7 +980,7 @@ setMethod("MRNAMEIp","gmatrix", function(x)  {
 							c('sinh','sinh',  'x@type'),
 							c('cosh','cosh',  'x@type'),
 							c('tanh','tanh',  'x@type'),
-							c('asinh','asinh',' x@type'),
+							c('asinh','asinh','x@type'),
 							c('acosh','acosh', 'x@type'),
 							c('atanh','atanh',  'x@type'),
 							c('abs','fabs',  'x@type'),
