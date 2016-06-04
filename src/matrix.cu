@@ -1081,6 +1081,25 @@ SEXP gpu_mat_times_diag_vec(SEXP A_in, SEXP B_in, SEXP n_row_in, SEXP n_col_in, 
 
 /*********************************************************************/
 
+template<typename T>
+  struct maximumNA : public thrust::binary_function<T,T,T>
+  {
+    __host__ __device__ T operator()(const T &lhs, const T &rhs) const {return IS_NAN<T>(rhs) ? rhs : (IS_NAN<T>(lhs) ? lhs : (lhs < rhs ? rhs : lhs));}
+  }; // end maximum
+  
+template<typename T>
+  struct minimumNA : public thrust::binary_function<T,T,T>
+  {
+    __host__ __device__ T operator()(const T &lhs, const T &rhs) const {return IS_NAN<T>(rhs) ? rhs : (IS_NAN<T>(lhs) ? lhs  : (lhs < rhs ? lhs : rhs));}
+  }; // end minimum
+ 
+ 
+template<typename T>
+  struct plusNA : public thrust::binary_function<T,T,T>
+  {
+    __host__ __device__ T operator()(const T &lhs, const T &rhs) const {return IS_NAN<T>(rhs) ? rhs : (IS_NAN<T>(lhs) ? lhs : (lhs + rhs));}
+  }; // end minimum
+
 
 SEXP gpu_sum(SEXP A_in, SEXP n_in, SEXP in_type)
 {
@@ -1095,20 +1114,20 @@ SEXP gpu_sum(SEXP A_in, SEXP n_in, SEXP in_type)
 		PROTECT(ret_final = allocVector(REALSXP, 1));
 		double* ret = REAL(ret_final);
 		thrust::device_ptr<double> dev_ptr( (double *) A->d_vec);
-		ret[0]= thrust::reduce(dev_ptr, dev_ptr + n, (double) 0, thrust::plus<double>());
+		ret[0]= thrust::reduce(dev_ptr, dev_ptr + n, (double) 0, plusNA<double>());
 	} else if(type==1){
 		PROTECT(ret_final = allocVector(REALSXP, 1));
 		double* ret = REAL(ret_final);
 		float rettmp;
 		thrust::device_ptr<float> dev_ptr((float *)A->d_vec);
-		rettmp=thrust::reduce(dev_ptr, dev_ptr + n, (float) 0, thrust::plus<float>());
+		rettmp=thrust::reduce(dev_ptr, dev_ptr + n, (float) 0, plusNA<float>());
 		ret[0]= (double) rettmp;
 	} else {
 		PROTECT(ret_final = allocVector(REALSXP, 1));
 		double* ret = REAL(ret_final);
 		int rettmp;
 		thrust::device_ptr<int> dev_ptr((int *) A->d_vec);
-		rettmp=thrust::reduce(dev_ptr, dev_ptr + n, (int) 0, thrust::plus<int>());
+		rettmp=thrust::reduce(dev_ptr, dev_ptr + n, (int) 0, plusNA<int>());
 		ret[0]= (int) rettmp;
 	}
 
@@ -1116,6 +1135,8 @@ SEXP gpu_sum(SEXP A_in, SEXP n_in, SEXP in_type)
 
 	return ret_final;
 }
+
+
 
 
 
@@ -1132,20 +1153,20 @@ SEXP gpu_min(SEXP A_in, SEXP n_in, SEXP in_type)
 		PROTECT(ret_final = allocVector(REALSXP, 1));
 		double* ret = REAL(ret_final);
 		thrust::device_ptr<double> dev_ptr( (double *) A->d_vec);
-		ret[0]= thrust::reduce(dev_ptr, dev_ptr + n, HUGE_VAL, thrust::minimum<double>());
+		ret[0]= thrust::reduce(dev_ptr, dev_ptr + n, HUGE_VAL, minimumNA<double>());
 	} else if(type==1){
 		PROTECT(ret_final = allocVector(REALSXP, 1));
 		double* ret = REAL(ret_final);
 		float rettmp;
 		thrust::device_ptr<float> dev_ptr((float *)A->d_vec);
-		rettmp=thrust::reduce(dev_ptr, dev_ptr + n,  HUGE_VALF, thrust::minimum<float>());
+		rettmp=thrust::reduce(dev_ptr, dev_ptr + n,  HUGE_VALF, minimumNA<float>());
 		ret[0]= (double) rettmp;
 	} else {
 		PROTECT(ret_final = allocVector(REALSXP, 1));
 		double* ret = REAL(ret_final);
 		int rettmp;
 		thrust::device_ptr<int> dev_ptr((int *) A->d_vec);
-		rettmp=thrust::reduce(dev_ptr, dev_ptr + n, INT_MAX, thrust::minimum<int>());
+		rettmp=thrust::reduce(dev_ptr, dev_ptr + n, INT_MAX, minimumNA<int>());
 		ret[0]= (int) rettmp;
 	}
 
@@ -1168,20 +1189,20 @@ SEXP gpu_max(SEXP A_in, SEXP n_in, SEXP in_type)
 		PROTECT(ret_final = allocVector(REALSXP, 1));
 		double* ret = REAL(ret_final);
 		thrust::device_ptr<double> dev_ptr( (double *) A->d_vec);
-		ret[0]= thrust::reduce(dev_ptr, dev_ptr + n,  -HUGE_VAL, thrust::maximum<double>());
+		ret[0]= thrust::reduce(dev_ptr, dev_ptr + n,  -HUGE_VAL, maximumNA<double>());
 	} else if(type==1){
 		PROTECT(ret_final = allocVector(REALSXP, 1));
 		double* ret = REAL(ret_final);
 		float rettmp;
 		thrust::device_ptr<float> dev_ptr((float *)A->d_vec);
-		rettmp=thrust::reduce(dev_ptr, dev_ptr + n,  -HUGE_VALF, thrust::maximum<float>());
+		rettmp=thrust::reduce(dev_ptr, dev_ptr + n,  -HUGE_VALF, maximumNA<float>());
 		ret[0]= (double) rettmp;
 	} else {
 		PROTECT(ret_final = allocVector(REALSXP, 1));
 		double* ret = REAL(ret_final);
 		int rettmp;
 		thrust::device_ptr<int> dev_ptr((int *) A->d_vec);
-		rettmp=thrust::reduce(dev_ptr, dev_ptr + n, INT_MIN, thrust::maximum<int>());
+		rettmp=thrust::reduce(dev_ptr, dev_ptr + n, INT_MIN, maximumNA<int>());
 		ret[0]= (int) rettmp;
 	}
 
@@ -1189,6 +1210,7 @@ SEXP gpu_max(SEXP A_in, SEXP n_in, SEXP in_type)
 
 	return ret_final;
 }
+
 
 
 

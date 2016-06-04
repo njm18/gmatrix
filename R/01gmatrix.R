@@ -173,7 +173,7 @@ as.vector.gmatrix =  function(x,mode=NULL) {
 	checkDevice(x@device)
 
 	ret=.gpu_get( x@ptr, x@nrow * x@ncol, x@type)
-	if(!is.null(mode))
+	if(!is.null(mode) & mode!="any")
 		mode(ret)=mode
 	return(ret)
 }
@@ -406,7 +406,8 @@ setReplaceMethod("diag", "gmatrix",
 			i=as.gvector(i, type=2L)
 	} else	if(class(i)=="gvector") {
 		checkDevice(i@device)
-		f=function(x) {if(is.na(x)) return(x)
+		f=function(x) {
+			if(!is.na(x)) return(x)
 			else return(sum(h(i),na.rm=TRUE))}
 		if(i@type==3L) {
 			i=which(i)

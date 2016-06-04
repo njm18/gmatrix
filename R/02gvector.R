@@ -287,7 +287,7 @@ setMethod("as.logical", "gvector",
 as.vector.gvector =  function(x, mode=NULL) {
 	checkDevice(x@device)
 	ret=.gpu_get( x@ptr, x@length, x@type)
-	if(!is.null(mode))
+	if(!is.null(mode) & mode!="any")
 		mode(ret)=mode
 	return(ret)
 }
